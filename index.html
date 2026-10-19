@@ -35,8 +35,17 @@
     <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
       <h2 class="font-bold">1. 프린트 사진 올리기 <span class="text-xs font-normal text-slate-400">(여러 장 가능)</span></h2>
       <input id="img" type="file" accept="image/*" multiple class="text-sm">
-      <p id="ocrSt" class="text-xs text-slate-500">사진을 올리면 글자를 읽어 아래 칸에 채워줘요. 인식이 틀린 곳은 직접 고쳐주세요.</p>
-      <h2 class="font-bold pt-2">2. 단어 확인·수정 <span id="cnt" class="text-sm font-normal text-emerald-600"></span></h2>
+      <p id="ocrSt" class="text-xs text-slate-500">형광펜 칠한 단어, 또는 "단어 (품사) + Definition:" 양식의 단어를 자동으로 찾아줘요.</p>
+      <div id="pick" class="hidden border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
+        <h2 class="font-bold text-sm">2. 단어 고르기 <span class="font-normal text-slate-500">(눌러서 선택 · 노란색은 형광펜 단어)</span></h2>
+        <div id="chips" class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto"></div>
+        <div class="flex flex-wrap gap-2 text-sm">
+          <button id="selHl" class="px-3 py-2 rounded-lg bg-yellow-100 cursor-pointer">🖍 형광펜만 선택</button>
+          <button id="selNone" class="px-3 py-2 rounded-lg bg-slate-200 cursor-pointer">모두 해제</button>
+          <button id="addSel" class="px-3 py-2 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer">➕ 선택한 <span id="pickN">0</span>개 추가</button>
+        </div>
+      </div>
+      <h2 class="font-bold pt-2">3. 단어 확인·수정 <span id="cnt" class="text-sm font-normal text-emerald-600"></span></h2>
       <textarea id="txt" rows="10" class="w-full border border-slate-300 rounded-xl p-3 text-sm font-mono" placeholder="한 줄에 한 단어씩 (직접 입력/붙여넣기도 가능)&#10;apple 사과&#10;beautiful 아름다운&#10;3. journey - 여행"></textarea>
       <div class="flex gap-2">
         <input id="ttl" class="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-sm" placeholder="세트 이름 (예: 10/19 단어 프린트)">
@@ -143,15 +152,55 @@ function renderScope(sel){const v=sel||$('scope').value;
 /* ---------- 올리기 (OCR · 파싱 · 세트 저장) ---------- */
 function parse(t){return t.split('\n').map(l=>{l=l.trim().replace(/^\d+\s*[.)]\s*/,'');if(!l)return null;
   const h=l.search(/[가-힣]/);let w,m='';
-  if(h>0){w=l.slice(0,h);m=l.slice(h)}else if(h<0){const p=l.split(/\s*[-:=\t|]\s*|\s{2,}/);w=p[0];m=p.slice(1).join(' ')}else return null;
+  if(h>0){w=l.slice(0,h);m=l.slice(h)}else if(h<0){const k=l.search(/\t|\s[-:=|]\s|:\s|\s{2,}/);if(k<0)w=l;else{w=l.slice(0,k);m=l.slice(k).replace(/^\s*[-:=|]?\s*/,'')}}else return null;
   w=w.replace(/[\s\-:=|,.]+$/,'').trim();return /^[A-Za-z][A-Za-z'’ \-]*$/.test(w)?{w,m:m.trim()}:null}).filter(Boolean)}
 const cnt=()=>{const n=parse($('txt').value).length;$('cnt').textContent=n?`· 단어 ${n}개 인식`:''};
 $('txt').oninput=cnt;
-$('img').onchange=async e=>{const fs=[...e.target.files];let n=0;
-  for(const f of fs){n++;$('ocrSt').textContent=`사진 ${n}/${fs.length} 글자 인식 중… (처음엔 1~2분 걸릴 수 있어요)`;
-    try{const r=await Tesseract.recognize(f,'eng+kor');$('txt').value+=($('txt').value&&!$('txt').value.endsWith('\n')?'\n':'')+r.data.text.trim()+'\n'}
-    catch(err){$('ocrSt').textContent='글자 인식에 실패했어요. 직접 입력해주세요.';return}}
-  $('ocrSt').textContent='인식 완료! 틀린 글자나 뜻을 고친 뒤 "세트 저장"을 눌러주세요.';cnt()};
+/* 이미지 → 단어 후보 (형광펜 감지 · 양식 파싱) */
+const STOP=new Set('the and but for are was were its his her you your our they their this that these those with from then there here some have has had does did not yes let oh just also very too can will would could into out off over than what when where who how why all any each one two her him them she'.split(' '));
+const cand=new Map(),sel=new Set();
+function addC(w,m,hl,pre){const k=norm(w);if(!k)return;const o=cand.get(k)||{k,w,m:'',hl:false};if(m&&!o.m)o.m=m;if(hl)o.hl=true;cand.set(k,o);if(pre)sel.add(k)}
+function renderPick(){const a=[...cand.values()].sort((x,y)=>y.hl-x.hl);$('pick').classList.toggle('hidden',!a.length);
+  $('chips').innerHTML=a.map(x=>`<button data-k="${esc(x.k)}" class="chip px-3 py-1.5 rounded-full border text-sm cursor-pointer ${sel.has(x.k)?'bg-emerald-600 text-white border-emerald-600':x.hl?'bg-yellow-100 border-yellow-400':'bg-white border-slate-300'}">${esc(x.w)}</button>`).join('');
+  $('pickN').textContent=sel.size}
+$('chips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.k;sel.has(k)?sel.delete(k):sel.add(k);renderPick()};
+$('selHl').onclick=()=>{sel.clear();cand.forEach(x=>x.hl&&sel.add(x.k));renderPick()};
+$('selNone').onclick=()=>{sel.clear();renderPick()};
+$('addSel').onclick=()=>{const have=new Set(parse($('txt').value).map(x=>norm(x.w)));let n=0;const t=$('txt');
+  cand.forEach(x=>{if(sel.has(x.k)&&!have.has(x.k)){t.value+=(t.value&&!t.value.endsWith('\n')?'\n':'')+x.w+(x.m?'\t'+x.m:'')+'\n';n++}});
+  sel.clear();renderPick();cnt();$('ocrSt').textContent=n+'개를 아래 목록에 추가했어요. 뜻(한글)을 적거나 고친 뒤 "세트 저장"을 눌러주세요.'};
+
+function wsParse(t){const L=t.split('\n').map(x=>x.trim()).filter(Boolean),o=[];
+  L.forEach((l,i)=>{const m=l.match(/^(?:\S{1,2}[.)]?\s+)?([A-Za-z][A-Za-z'-]+)\s*\(\s*(noun|verb|adj\w*|adv\w*|prep\w*|pron\w*|conj\w*)\s*\)/i);
+    if(m){const n=(L[i+1]||'').match(/^Defin\w*\s*[:;.]?\s*(.+)/i);o.push({w:m[1],m:n?n[1]:''})}});return o}
+function blobsFrom(d,W,H){const m=new Uint8Array(W*H),st=new Int32Array(W*H),out=[];
+  for(let i=0,p=0;i<d.length;i+=4,p++)m[p]=d[i]>225&&d[i+1]>200&&d[i+2]<150&&d[i]-d[i+2]>90?1:0;
+  for(let s=0;s<m.length;s++){if(m[s]!==1)continue;let sp=0,x0=W,y0=H,x1=0,y1=0,n=0;st[sp++]=s;m[s]=2;
+    while(sp){const p=st[--sp],x=p%W,y=(p-x)/W;n++;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;const q=ny*W+nx;if(m[q]===1){m[q]=2;st[sp++]=q}}}
+    const w=x1-x0+1,h=y1-y0+1;if(n>150&&w>=h*1.6&&h>=12&&h<=H*0.08&&n/(w*h)>0.35)out.push({x0,y0,x1,y1})}
+  return out}
+const blobs=c=>blobsFrom(c.getContext('2d').getImageData(0,0,c.width,c.height).data,c.width,c.height);
+function crop(c,b){const p=4,x=Math.max(0,b.x0-p),y=Math.max(0,b.y0-p),w=Math.min(c.width,b.x1+p)-x,h=Math.min(c.height,b.y1+p)-y,o=document.createElement('canvas');
+  o.width=w;o.height=h;o.getContext('2d').drawImage(c,x,y,w,h,0,0,w,h);return o}
+async function toCanvas(f){const u=URL.createObjectURL(f),im=new Image();await new Promise((ok,no)=>{im.onload=ok;im.onerror=no;im.src=u});
+  const s=Math.min(3,Math.max(1,2000/im.naturalWidth)),c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*s);c.height=Math.round(im.naturalHeight*s);
+  c.getContext('2d',{willReadFrequently:true}).drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);return c}
+$('img').onchange=async e=>{const fs=[...e.target.files];let w,n=0;
+  try{w=await Tesseract.createWorker('eng');
+    for(const f of fs){n++;$('ocrSt').textContent=`사진 ${n}/${fs.length} 분석 중… (처음엔 1~2분 걸릴 수 있어요)`;
+      const c=await toCanvas(f);await w.setParameters({tessedit_pageseg_mode:'3'});
+      const r=await w.recognize(c),ws=wsParse(r.data.text);
+      if(ws.length>=2){ws.forEach(x=>addC(x.w,x.m,false,true))}
+      else{
+        (r.data.words||[]).forEach(x=>{const t=x.text.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g,'');if(x.confidence>=60&&/^[A-Za-z][A-Za-z'-]{2,}$/.test(t)&&!STOP.has(t.toLowerCase()))addC(t,'',false,false)});
+        await w.setParameters({tessedit_pageseg_mode:'7'});
+        for(const b of blobs(c)){const t=(await w.recognize(crop(c,b))).data.text.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g,'');
+          if(/^[A-Za-z][A-Za-z' -]{1,24}$/.test(t))addC(t,'',true,true)}}
+      renderPick()}
+    $('ocrSt').textContent=cand.size?'단어를 찾았어요! 필요한 단어를 고른 뒤 "추가"를 눌러주세요.':'단어를 찾지 못했어요. 선명한 캡처로 다시 올리거나 직접 입력해주세요.'}
+  catch(err){$('ocrSt').textContent='글자 인식에 실패했어요. 직접 입력해주세요.'}
+  finally{try{w&&await w.terminate()}catch(x){}}};
 $('saveSet').onclick=()=>{const seen=new Set(),words=parse($('txt').value).filter(x=>!seen.has(norm(x.w))&&seen.add(norm(x.w)));
   if(!words.length)return alert('단어를 찾지 못했어요.\n"apple 사과" 처럼 한 줄에 한 단어씩 적어주세요.');
   const d=new Date(),id='s'+Date.now();
