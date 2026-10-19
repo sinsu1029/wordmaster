@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>단어 마스터</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<style>
+  .t.on{background:#fff;color:#047857;box-shadow:0 1px 2px #0002}
+  .hl{background:#fef3c7!important;border-color:#fbbf24!important}
+  .hidem .mean:not(.show){filter:blur(6px);cursor:pointer}
+</style>
+</head>
+<body class="bg-emerald-50/40 text-slate-800 font-sans min-h-screen pb-20">
+<div class="max-w-3xl mx-auto px-4 py-5">
+  <header class="mb-4">
+    <h1 id="title" class="text-2xl font-bold cursor-pointer" title="눌러서 이름 바꾸기"></h1>
+    <p class="text-xs text-slate-500">주 2회 학원 프린트 → 읽기 · 스펠링 · 퀴즈 · 오답</p>
+  </header>
+
+  <div class="flex flex-col sm:flex-row gap-2 mb-5">
+    <nav class="flex gap-1 bg-slate-200/70 p-1 rounded-xl text-sm font-medium overflow-x-auto flex-1">
+      <button data-t="import" class="t px-3.5 py-2 rounded-lg whitespace-nowrap cursor-pointer">📥 올리기</button>
+      <button data-t="read" class="t px-3.5 py-2 rounded-lg whitespace-nowrap cursor-pointer">🔊 읽기</button>
+      <button data-t="spell" class="t px-3.5 py-2 rounded-lg whitespace-nowrap cursor-pointer">✍️ 스펠링</button>
+      <button data-t="quiz" class="t px-3.5 py-2 rounded-lg whitespace-nowrap cursor-pointer">❓ 퀴즈</button>
+      <button data-t="wrong" class="t px-3.5 py-2 rounded-lg whitespace-nowrap cursor-pointer">🔁 오답 <span id="wrongN" class="bg-rose-500 text-white text-xs px-1.5 py-0.5 rounded-full">0</span></button>
+    </nav>
+    <select id="scope" class="border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white"></select>
+  </div>
+
+  <!-- 올리기 -->
+  <section id="p-import" class="pg hidden space-y-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+      <h2 class="font-bold">1. 프린트 사진 올리기 <span class="text-xs font-normal text-slate-400">(여러 장 가능)</span></h2>
+      <input id="img" type="file" accept="image/*" multiple class="text-sm">
+      <p id="ocrSt" class="text-xs text-slate-500">사진을 올리면 글자를 읽어 아래 칸에 채워줘요. 인식이 틀린 곳은 직접 고쳐주세요.</p>
+      <h2 class="font-bold pt-2">2. 단어 확인·수정 <span id="cnt" class="text-sm font-normal text-emerald-600"></span></h2>
+      <textarea id="txt" rows="10" class="w-full border border-slate-300 rounded-xl p-3 text-sm font-mono" placeholder="한 줄에 한 단어씩 (직접 입력/붙여넣기도 가능)&#10;apple 사과&#10;beautiful 아름다운&#10;3. journey - 여행"></textarea>
+      <div class="flex gap-2">
+        <input id="ttl" class="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-sm" placeholder="세트 이름 (예: 10/19 단어 프린트)">
+        <button id="saveSet" class="px-4 py-2.5 rounded-xl font-bold cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white">세트 저장</button>
+      </div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-4">
+      <h2 class="font-bold mb-2">📚 저장된 세트</h2>
+      <div id="setList" class="space-y-2"></div>
+    </div>
+  </section>
+
+  <!-- 읽기 -->
+  <section id="p-read" class="pg hidden">
+    <div class="flex flex-wrap gap-3 items-center mb-3">
+      <button id="readAll" class="px-4 py-2.5 rounded-xl font-bold cursor-pointer bg-emerald-600 text-white">🔊 전체 듣기</button>
+      <label class="text-sm flex items-center gap-1.5"><input type="checkbox" id="hideM"> 뜻 가리기 (눌러서 확인)</label>
+    </div>
+    <div id="readBox" class="space-y-2"></div>
+  </section>
+
+  <!-- 스펠링 -->
+  <section id="p-spell" class="pg hidden">
+    <div class="flex gap-2 mb-3 items-center">
+      <select id="spLv" class="border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white">
+        <option value="1">1단계 · 보고 쓰기</option>
+        <option value="2">2단계 · 빈칸 채우기</option>
+        <option value="3">3단계 · 듣고 쓰기</option>
+      </select>
+      <button id="spRe" class="px-3 py-2 rounded-xl text-sm cursor-pointer bg-slate-200">🔀 새로 시작</button>
+    </div>
+    <div id="spBox" class="bg-white border border-slate-200 rounded-2xl p-5"></div>
+  </section>
+
+  <!-- 퀴즈 -->
+  <section id="p-quiz" class="pg hidden">
+    <div class="flex gap-2 mb-3 items-center">
+      <select id="qzDir" class="border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white">
+        <option value="en2ko">영어 → 뜻 고르기</option>
+        <option value="ko2en">뜻 → 영어 고르기</option>
+        <option value="listen">듣고 뜻 고르기</option>
+      </select>
+      <button id="qzRe" class="px-3 py-2 rounded-xl text-sm cursor-pointer bg-slate-200">🔀 새로 시작</button>
+    </div>
+    <div id="qzBox" class="bg-white border border-slate-200 rounded-2xl p-5"></div>
+  </section>
+
+  <!-- 오답 -->
+  <section id="p-wrong" class="pg hidden">
+    <div class="flex flex-wrap gap-2 mb-3">
+      <button id="wSp" class="px-4 py-2.5 rounded-xl font-bold cursor-pointer bg-emerald-600 text-white">✍️ 오답 스펠링</button>
+      <button id="wQz" class="px-4 py-2.5 rounded-xl font-bold cursor-pointer bg-emerald-600 text-white">❓ 오답 퀴즈</button>
+    </div>
+    <p class="text-xs text-slate-500 mb-3">틀린 단어는 여기에 쌓이고, 이후 <b>연속 2번 맞히면 자동으로 졸업</b>해요.</p>
+    <div id="wrongBox" class="space-y-2"></div>
+  </section>
+</div>
+
+<button id="rateBtn" class="fixed bottom-4 right-4 z-50 bg-emerald-600 text-white text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg cursor-pointer">🙂 보통 속도</button>
+
+<script>
+const $=id=>document.getElementById(id), KEY='wordBuddy:child2', B='px-4 py-2.5 rounded-xl font-bold cursor-pointer ';
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuf=a=>a.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+const norm=s=>s.toLowerCase().replace(/\s+/g,' ').trim();
+const md=d=>(d.getMonth()+1)+'/'+d.getDate();
+
+/* ---------- 저장 데이터 ---------- */
+let S={name:'둘째',sets:[],stats:{}};
+try{S=Object.assign(S,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const allW=()=>{const m=new Map();S.sets.forEach(s=>s.words.forEach(x=>{const k=norm(x.w);if(!m.has(k)||(!m.get(k).m&&x.m))m.set(k,x)}));return m};
+const wrongList=()=>{const a=allW();return Object.keys(S.stats).filter(k=>S.stats[k].x>0&&S.stats[k].s<2&&a.has(k)).map(k=>a.get(k))};
+const pool=()=>{const v=$('scope').value;if(v==='all')return[...allW().values()];if(v==='wrong')return wrongList();const s=S.sets.find(s=>s.id===v);return s?s.words:[]};
+function mark(w,ok){const k=norm(w),z=S.stats[k]||(S.stats[k]={r:0,x:0,s:0});if(ok){z.r++;z.s++}else{z.x++;z.s=0}save();renderWrong()}
+const empty=()=>'<p class="text-center text-slate-400 py-10">'+($('scope').value==='wrong'?'오답이 없어요 👏':"단어가 없어요. '올리기'에서 프린트를 올려주세요.")+'</p>';
+
+/* ---------- 음성 ---------- */
+let voice,tok=0,ri=1,reading=0;
+const RATES=[[.6,'🐢 느리게'],[.85,'🙂 보통'],[1,'🐇 빠르게']];
+const pv=()=>{const e=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));voice=e.find(v=>/en.US/i.test(v.lang)&&/Google|Samantha|Aaron|Natural|Enhanced/i.test(v.name))||e.find(v=>/en.US/i.test(v.lang))||e[0]};
+pv();speechSynthesis.onvoiceschanged=pv;
+function say(t,done){const u=new SpeechSynthesisUtterance(t);u.lang='en-US';if(voice)u.voice=voice;u.rate=RATES[ri][0];let d=0;u.onend=u.onerror=()=>{if(!d){d=1;done&&done()}};speechSynthesis.speak(u)}
+function endRead(){reading=0;$('readAll').textContent='🔊 전체 듣기';document.querySelectorAll('.hl').forEach(e=>e.classList.remove('hl'))}
+const spk=t=>{tok++;speechSynthesis.cancel();endRead();say(t)};
+const letters=w=>spk(w.replace(/[^A-Za-z ]/g,'').split('').join(', '));
+$('rateBtn').onclick=function(){ri=(ri+1)%3;this.textContent=RATES[ri][1]+' 속도';spk('Ready')};
+
+/* ---------- 탭 ---------- */
+let cur='import';
+function tab(n){cur=n;tok++;speechSynthesis.cancel();endRead();
+  document.querySelectorAll('.pg').forEach(e=>e.classList.toggle('hidden',e.id!=='p-'+n));
+  document.querySelectorAll('.t').forEach(b=>b.classList.toggle('on',b.dataset.t===n));
+  if(n==='read')renderRead();if(n==='spell')spStart();if(n==='quiz')qzStart();if(n==='wrong')renderWrong();if(n==='import')renderSets()}
+document.querySelectorAll('.t').forEach(b=>b.onclick=()=>tab(b.dataset.t));
+$('scope').onchange=()=>tab(cur);
+
+function renderScope(sel){const v=sel||$('scope').value;
+  const o=[...S.sets].reverse().map(s=>`<option value="${s.id}">${s.date} · ${esc(s.title)} (${s.words.length})</option>`);
+  o.push(`<option value="all">📚 전체 (${allW().size})</option>`,`<option value="wrong">🔁 오답만 (${wrongList().length})</option>`);
+  $('scope').innerHTML=o.join('');
+  $('scope').value=[...$('scope').options].some(x=>x.value===v)?v:(S.sets.length?S.sets[S.sets.length-1].id:'all')}
+
+/* ---------- 올리기 (OCR · 파싱 · 세트 저장) ---------- */
+function parse(t){return t.split('\n').map(l=>{l=l.trim().replace(/^\d+\s*[.)]\s*/,'');if(!l)return null;
+  const h=l.search(/[가-힣]/);let w,m='';
+  if(h>0){w=l.slice(0,h);m=l.slice(h)}else if(h<0){const p=l.split(/\s*[-:=\t|]\s*|\s{2,}/);w=p[0];m=p.slice(1).join(' ')}else return null;
+  w=w.replace(/[\s\-:=|,.]+$/,'').trim();return /^[A-Za-z][A-Za-z'’ \-]*$/.test(w)?{w,m:m.trim()}:null}).filter(Boolean)}
+const cnt=()=>{const n=parse($('txt').value).length;$('cnt').textContent=n?`· 단어 ${n}개 인식`:''};
+$('txt').oninput=cnt;
+$('img').onchange=async e=>{const fs=[...e.target.files];let n=0;
+  for(const f of fs){n++;$('ocrSt').textContent=`사진 ${n}/${fs.length} 글자 인식 중… (처음엔 1~2분 걸릴 수 있어요)`;
+    try{const r=await Tesseract.recognize(f,'eng+kor');$('txt').value+=($('txt').value&&!$('txt').value.endsWith('\n')?'\n':'')+r.data.text.trim()+'\n'}
+    catch(err){$('ocrSt').textContent='글자 인식에 실패했어요. 직접 입력해주세요.';return}}
+  $('ocrSt').textContent='인식 완료! 틀린 글자나 뜻을 고친 뒤 "세트 저장"을 눌러주세요.';cnt()};
+$('saveSet').onclick=()=>{const seen=new Set(),words=parse($('txt').value).filter(x=>!seen.has(norm(x.w))&&seen.add(norm(x.w)));
+  if(!words.length)return alert('단어를 찾지 못했어요.\n"apple 사과" 처럼 한 줄에 한 단어씩 적어주세요.');
+  const d=new Date(),id='s'+Date.now();
+  S.sets.push({id,date:md(d),title:$('ttl').value.trim()||md(d)+' 단어 프린트',words});save();
+  $('txt').value='';$('ttl').value='';$('img').value='';cnt();renderScope(id);tab('read')};
+function renderSets(){$('setList').innerHTML=S.sets.length?[...S.sets].reverse().map(s=>
+  `<div class="flex justify-between items-center border border-slate-200 rounded-xl p-2.5 text-sm"><span><b>${s.date}</b> ${esc(s.title)} <span class="text-slate-400">· ${s.words.length}개</span></span><button onclick="delSet('${s.id}')" class="text-rose-500 text-xs underline cursor-pointer">삭제</button></div>`).join('')
+  :'<p class="text-sm text-slate-400">아직 저장된 세트가 없어요.</p>'}
+function delSet(id){if(!confirm('이 세트를 삭제할까요?'))return;S.sets=S.sets.filter(s=>s.id!==id);save();renderScope();renderSets();renderWrong()}
+
+/* ---------- 읽기 ---------- */
+let curRead=[];
+function renderRead(){curRead=pool();$('readBox').innerHTML=curRead.length?curRead.map((x,i)=>
+  `<div class="rw flex items-center justify-between bg-white border border-slate-200 rounded-xl p-3" data-i="${i}"><div><div class="text-xl font-bold">${esc(x.w)}</div><div class="mean text-sm text-slate-600">${esc(x.m||'')}</div></div><div class="flex gap-1.5"><button data-a="w" class="w-10 h-10 bg-emerald-100 rounded-full cursor-pointer" title="발음">🔊</button><button data-a="l" class="w-10 h-10 bg-slate-100 rounded-full cursor-pointer" title="철자 읽기">🔤</button></div></div>`).join(''):empty()}
+$('readBox').onclick=e=>{const m=e.target.closest('.mean');if(m)return m.classList.toggle('show');
+  const b=e.target.closest('button');if(!b)return;const x=curRead[b.closest('.rw').dataset.i];b.dataset.a==='w'?spk(x.w):letters(x.w)};
+$('hideM').onchange=e=>$('readBox').classList.toggle('hidem',e.target.checked);
+$('readAll').onclick=()=>{if(reading){tok++;speechSynthesis.cancel();return endRead()}
+  const L=curRead,my=++tok;if(!L.length)return;reading=1;$('readAll').textContent='⏹️ 멈추기';let i=0;
+  const nx=()=>{if(my!==tok)return;document.querySelectorAll('.hl').forEach(e=>e.classList.remove('hl'));if(i>=L.length)return endRead();
+    const el=document.querySelector('.rw[data-i="'+i+'"]');if(el){el.classList.add('hl');el.scrollIntoView({block:'center',behavior:'smooth'})}
+    say(L[i++].w,()=>setTimeout(nx,900))};nx()};
+
+/* ---------- 스펠링 ---------- */
+let sp;
+function spStart(){const L=shuf(pool());if(!L.length){$('spBox').innerHTML=empty();return}sp={L,i:0,ok:0,ph:0,hint:0};spShow()}
+function spShow(){const w=sp.L[sp.i];
+  if(!w){$('spBox').innerHTML=`<div class="text-center py-6"><div class="text-5xl">🎉</div><p class="text-xl font-bold mt-2">${sp.ok} / ${sp.L.length} 정답!</p><button onclick="spStart()" class="${B}mt-4 bg-emerald-600 text-white">다시 하기</button></div>`;return}
+  sp.ph=0;sp.hint=0;const lv=$('spLv').value;
+  const mask=[...w.w].map((c,i)=>/[A-Za-z]/.test(c)&&i>0&&i%2?'＿':c).join('');
+  const show=lv==='1'?esc(w.w):lv==='2'?mask:'🔊';
+  $('spBox').innerHTML=`<div class="text-xs text-slate-400 mb-2">${sp.i+1} / ${sp.L.length}</div>
+  <div class="text-center space-y-1 py-2"><div class="text-3xl font-bold tracking-[.25em]">${show}</div><div class="text-slate-600">${esc(w.m||'')}</div></div>
+  <div class="flex justify-center gap-2 my-3"><button onclick="spk(sp.L[sp.i].w)" class="${B}bg-emerald-100">🔊 듣기</button><button onclick="letters(sp.L[sp.i].w)" class="${B}bg-slate-100">🔤 철자</button><button onclick="spHint()" class="${B}bg-amber-100">💡 힌트</button></div>
+  <input id="spIn" autocomplete="off" autocapitalize="none" spellcheck="false" class="w-full border-2 border-slate-300 rounded-xl p-3 text-xl text-center" placeholder="여기에 써보세요">
+  <div id="spFb" class="min-h-8 text-center mt-3"></div>
+  <div class="text-center"><button id="spBtn" onclick="spCheck()" class="${B}bg-emerald-600 text-white">확인</button></div>`;
+  $('spIn').onkeydown=e=>{if(e.key==='Enter')spCheck()};$('spIn').focus();if(lv==='3')spk(w.w)}
+const spFb=(h,c)=>{$('spFb').className='min-h-8 text-center mt-3 '+c;$('spFb').innerHTML=h};
+function spHint(){const w=sp.L[sp.i];sp.hint=Math.min(sp.hint+1,w.w.length);$('spIn').value=w.w.slice(0,sp.hint);$('spIn').focus()}
+function spCheck(){const w=sp.L[sp.i];if(sp.ph===1){sp.i++;return spShow()}
+  const raw=$('spIn').value.trim(),v=norm(raw);if(!v)return;
+  if(v===norm(w.w)){if(sp.ph===2){sp.i++;return spShow()}
+    mark(w.w,1);sp.ok++;sp.ph=1;spFb('⭕ 정답! 잘했어요','text-emerald-600 font-bold');$('spBtn').textContent='다음 ▶';return}
+  if(sp.ph===2)return spFb('❌ 정답을 보고 정확히 써보세요','text-rose-600');
+  mark(w.w,0);sp.ph=2;
+  const mine=[...raw].map((c,i)=>`<span class="${c.toLowerCase()===(w.w[i]||'').toLowerCase()?'':'text-rose-600 underline'}">${esc(c)}</span>`).join('');
+  spFb(`❌ 내 답: ${mine}<br>정답: <b class="text-xl">${esc(w.w)}</b><br><span class="text-xs text-slate-500">정답을 보고 한 번 따라 써보세요</span>`,'');
+  $('spIn').value='';$('spIn').placeholder='정답을 보고 따라 써요';$('spIn').focus()}
+$('spLv').onchange=spStart;$('spRe').onclick=spStart;
+
+/* ---------- 퀴즈 ---------- */
+let qz;
+function qzStart(){const a=[...allW().values()].filter(x=>x.m),L=shuf(pool().filter(x=>x.m)).slice(0,10);
+  if(!L.length){$('qzBox').innerHTML=pool().length?'<p class="text-center text-slate-400 py-10">뜻이 있는 단어가 필요해요.</p>':empty();return}
+  qz={L,i:0,ok:0,bad:[],a,o:[],done:0};qzShow()}
+function qzShow(){const w=qz.L[qz.i];if(!w)return qzEnd();const d=$('qzDir').value;
+  qz.o=shuf([w,...shuf(qz.a.filter(x=>norm(x.w)!==norm(w.w))).slice(0,3)]);qz.done=0;
+  const head=d==='ko2en'?`<div class="text-2xl font-bold">${esc(w.m)}</div>`
+    :d==='listen'?`<button onclick="spk(qz.L[qz.i].w)" class="text-5xl cursor-pointer">🔊</button><div class="text-sm text-slate-500">듣고 뜻을 골라요</div>`
+    :`<div class="text-3xl font-bold">${esc(w.w)} <button onclick="spk(qz.L[qz.i].w)" class="text-xl cursor-pointer">🔊</button></div>`;
+  $('qzBox').innerHTML=`<div class="text-xs text-slate-400 mb-2">${qz.i+1} / ${qz.L.length}</div><div class="text-center py-4 space-y-1">${head}</div>
+  <div class="grid gap-2">${qz.o.map((o,j)=>`<button onclick="qzPick(${j})" class="qo ${B}bg-white border-2 border-slate-200 text-left">${esc(d==='ko2en'?o.w:o.m)}</button>`).join('')}</div><div id="qzNx" class="mt-3 text-center"></div>`;
+  if(d==='listen')spk(w.w)}
+function qzPick(j){if(qz.done)return;qz.done=1;const w=qz.L[qz.i],ok=qz.o[j]===w;mark(w.w,ok);ok?qz.ok++:qz.bad.push(w);
+  document.querySelectorAll('.qo').forEach((b,k)=>{if(qz.o[k]===w){b.style.background='#d1fae5';b.style.borderColor='#10b981'}else if(k===j){b.style.background='#ffe4e6';b.style.borderColor='#f43f5e'}});
+  $('qzNx').innerHTML=`<button onclick="qz.i++;qzShow()" class="${B}bg-emerald-600 text-white">다음 ▶</button>`}
+function qzEnd(){$('qzBox').innerHTML=`<div class="text-center py-4"><div class="text-5xl">${qz.ok===qz.L.length?'🏆':'👍'}</div><p class="text-xl font-bold mt-2">${qz.ok} / ${qz.L.length} 정답!</p>
+  ${qz.bad.length?`<div class="text-sm text-left mt-4 space-y-1"><p class="font-bold text-rose-600">틀린 단어 (오답노트에 저장됐어요)</p>${qz.bad.map(x=>`<p>${esc(x.w)} — ${esc(x.m)}</p>`).join('')}</div>`:''}
+  <button onclick="qzStart()" class="${B}mt-4 bg-emerald-600 text-white">다시 하기</button></div>`}
+$('qzDir').onchange=qzStart;$('qzRe').onclick=qzStart;
+
+/* ---------- 오답 ---------- */
+let wl=[];
+function renderWrong(){wl=wrongList();$('wrongN').textContent=wl.length;
+  const grad=Object.keys(S.stats).filter(k=>S.stats[k].x>0&&S.stats[k].s>=2).length;
+  $('wrongBox').innerHTML=(wl.length?[...wl].sort((a,b)=>S.stats[norm(b.w)].x-S.stats[norm(a.w)].x).map((x,i)=>{const z=S.stats[norm(x.w)];
+    return `<div class="flex items-center justify-between bg-white border border-rose-200 rounded-xl p-3"><div><div class="font-bold text-lg">${esc(x.w)}</div><div class="text-sm text-slate-600">${esc(x.m||'')}</div><div class="text-xs text-rose-600">❌ ${z.x}회 틀림 · 연속 정답 ${z.s}/2</div></div>
+    <div class="flex gap-1.5"><button onclick="spk(${JSON.stringify(x.w).replace(/"/g,'&quot;')})" class="w-10 h-10 bg-emerald-100 rounded-full cursor-pointer">🔊</button><button onclick="gradW(${JSON.stringify(norm(x.w)).replace(/"/g,'&quot;')})" class="px-3 h-10 bg-slate-100 rounded-full text-xs cursor-pointer">졸업</button></div></div>`}).join('')
+    :'<p class="text-center text-slate-400 py-8">오답이 없어요 👏</p>')+`<p class="text-xs text-slate-400 text-center pt-2">🎓 졸업한 단어 ${grad}개</p>`;
+  const v=$('scope').value;renderScope(v)}
+function gradW(k){if(S.stats[k]){S.stats[k].s=2;save();renderWrong()}}
+$('wSp').onclick=()=>{$('scope').value='wrong';tab('spell')};
+$('wQz').onclick=()=>{$('scope').value='wrong';tab('quiz')};
+
+/* ---------- 시작 ---------- */
+const showName=()=>{$('title').textContent='📝 '+S.name+'의 단어 마스터'};
+$('title').onclick=()=>{const n=prompt('아이 이름을 입력하세요',S.name);if(n&&n.trim()){S.name=n.trim();save();showName()}};
+showName();renderScope();renderSets();$('wrongN').textContent=wrongList().length;
+tab(S.sets.length?'read':'import');
+</script>
+</body>
+</html>
