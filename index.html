@@ -103,6 +103,7 @@
   .rw.hl{background:#fef9c3;border-color:#fbbf24}
   .w{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.25;word-break:break-word}
   .mean{font-size:16px;color:#475569;margin-top:2px;transition:filter .15s}
+  .def{font-size:14px;color:#64748b;font-style:italic;line-height:1.55;margin-top:5px}
   .hidem .mean:not(.show){filter:blur(7px);cursor:pointer}
 
   /* ── 진행 표시 ──────────────────────────────────────── */
@@ -139,7 +140,7 @@
   .meta{font-size:13px;color:#e11d48;margin-top:3px;font-weight:700}
 
   /* ── 칩 ─────────────────────────────────────────────── */
-  .chips{display:flex;flex-wrap:wrap;gap:8px;max-height:200px;overflow-y:auto;padding:4px 0}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;max-height:300px;overflow-y:auto;padding:4px 0}
   .chip{
     min-height:46px;padding:0 14px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;
     font-size:14px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;
@@ -238,7 +239,7 @@
         <select id="qzDir" class="scope" style="margin:0;flex:1;min-width:190px;width:auto" aria-label="퀴즈 방식">
           <option value="en2ko">영어 → 뜻 고르기</option>
           <option value="ko2en">뜻 → 영어 고르기</option>
-          <option value="listen">듣고 뜻 고르기</option>
+          <option value="listen">듣고 뜻 고르기</option><option value="def2en">영영 뜻 → 단어 고르기</option>
         </select>
         <button id="qzRe" class="btn ghost">🔀 새로 시작</button>
       </div>
@@ -264,8 +265,29 @@
     </div>
 
     <div class="card">
+      <h3 class="h3">🔑 AI 설정 · 사진 자동 인식</h3>
+      <p class="hint">키를 넣으면 사진에서 <b>단어와 뜻</b>을 AI가 한 번에 뽑아요. <b>난이도 필터 없이 파일에 있는 단어를 모두</b> 가져옵니다. 키는 이 브라우저에만 저장되고 파일에는 들어가지 않습니다.</p>
+      <p class="hint" style="margin:10px 0 4px;font-weight:700;color:#475569">제공사</p>
+      <select id="aiProv">
+        <option value="gemini">Google Gemini</option>
+        <option value="anthropic">Anthropic (Claude)</option>
+      </select>
+      <p class="hint" style="margin:10px 0 4px;font-weight:700;color:#475569">API 키</p>
+      <input id="aiKey" type="password" autocomplete="off" placeholder="AIza…">
+      <p class="hint" style="margin:10px 0 4px;font-weight:700;color:#475569">모델</p>
+      <input id="aiModel" placeholder="gemini-3.8-flash">
+      <div class="row wrap" style="margin-top:12px">
+        <button id="aiSave" class="btn sm primary">저장</button>
+        <button id="aiCheck" class="btn sm ghost">연결 확인</button>
+        <button id="aiDel" class="btn sm danger">키 삭제</button>
+      </div>
+      <p id="aiStatus" class="hint"></p>
+      <div id="aiModels" class="chips" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
       <h3 class="h3">1. 사진으로 단어 찾기</h3>
-      <p class="hint">프린트 사진을 올리면 형광펜 단어나 <b>단어 (품사) + Definition:</b> 양식을 찾아요. 사진 인식은 <b>인터넷 연결이 필요</b>하고, 처음엔 1~2분 걸릴 수 있어요. 연결이 없으면 아래 3번에 직접 입력해 주세요.</p>
+      <p class="hint">사진을 올리면 <b>형광펜으로 표시된 단어</b>를 중심으로 <b>단어·발음기호·뜻</b>을 AI가 뽑아요(키가 있을 때). 하단 Key Words 목록도 함께 반영합니다. 키가 없으면 기존 문자 인식(OCR)으로 동작하고, 결과는 아래 3번 목록으로 넘어가요.</p>
       <label class="file" for="img" style="margin-top:10px">📷 사진 선택 (여러 장 가능)</label>
       <input id="img" type="file" accept="image/*" multiple class="hidden">
       <p id="ocrSt" class="hint"></p>
@@ -518,6 +540,7 @@ function renderRead() {
   $('readBox').innerHTML = curRead.length
     ? curRead.map((x, i) =>
       '<div class="rw" data-i="' + i + '"><div><div class="w">' + esc(x.w) + '</div>' +
+      (x.d ? '<div class=\"def\">' + esc(x.d) + '</div>' : '') +
       '<div class="mean">' + esc(x.m || '') + '</div></div>' +
       '<div class="row" style="gap:8px;flex:none">' +
       '<button class="btn round soft" data-a="w" aria-label="발음 듣기">🔊</button>' +
@@ -585,7 +608,8 @@ function spShow() {
     '<div class="step">' + (sp.i + 1) + ' / ' + sp.L.length + '</div>' +
     '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
     '<div class="prompt">' + prompt + '</div>' +
-    '<div style="text-align:center;color:#334155;font-size:17px;margin-top:8px;font-weight:600">' + esc(w.m || '') + '</div>' +
+    (w.d ? '<div class="def" style="text-align:center;margin-top:10px">' + esc(w.d) + '</div>' : '') +
+    '<div style="text-align:center;color:#334155;font-size:17px;margin-top:6px;font-weight:600">' + esc(w.m || '') + '</div>' +
     '<div class="row" style="justify-content:center;margin:18px 0 16px;gap:8px">' +
     '<button class="btn sm soft" id="spSay">🔊 듣기</button>' +
     '<button class="btn sm ghost" id="spAbc">🔤 철자</button>' +
@@ -642,8 +666,8 @@ $('spRe').onclick = spStart;
 let qz = null;
 function qzStart() {
   stopSpeech();
-  const all = [...allW().values()].filter(x => x.m);
-  const L = shuf(pool().filter(x => x.m)).slice(0, 10);
+  const all = [...allW().values()].filter(x => x.m || x.d);
+  const L = shuf(pool().filter(x => x.m || x.d)).slice(0, 10);
   if (!L.length) {
     $('qzBox').innerHTML = pool().length
       ? '<div class="empty">뜻이 적힌 단어가 필요해요.<br><span style="font-size:13px;font-weight:500">부모님께 뜻을 채워 달라고 해요.</span></div>'
@@ -660,7 +684,9 @@ function qzShow() {
   qz.o = shuf([w, ...shuf(qz.a.filter(x => norm(x.w) !== norm(w.w))).slice(0, 3)]);
   qz.done = 0;
   const pct = Math.round((qz.i + 1) / qz.L.length * 100);
-  const head = d === 'ko2en'
+  const head = d === 'def2en'
+    ? '<div style="font-size:17px;font-weight:700;line-height:1.6">' + esc(w.d || w.m) + '</div>'
+    : d === 'ko2en'
     ? '<div style="font-size:26px;font-weight:800">' + esc(w.m) + '</div>'
     : d === 'listen'
       ? '<button class="btn round primary" id="qzSay" style="font-size:26px">🔊</button><div class="hint" style="margin-top:8px">듣고 뜻을 골라요</div>'
@@ -671,7 +697,7 @@ function qzShow() {
     '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
     '<div style="text-align:center;padding:6px 0 18px">' + head + '</div>' +
     '<div class="stack" id="qzOpts">' +
-    qz.o.map((o, j) => '<button class="qo" data-j="' + j + '">' + esc(d === 'ko2en' ? o.w : o.m) + '</button>').join('') +
+    qz.o.map((o, j) => '<button class="qo" data-j="' + j + '">' + esc((d === 'ko2en' || d === 'def2en') ? o.w : (o.m || o.d)) + '</button>').join('') +
     '</div><div id="qzNx" style="margin-top:14px"></div>';
 
   $('qzOpts').querySelectorAll('.qo').forEach(b => b.onclick = () => qzPick(+b.dataset.j));
@@ -799,7 +825,7 @@ $('txt').oninput = () => {
 
 /* ───────── OCR (인터넷 필요 · 지연 로드) ───────── */
 const STOP = new Set(('the and but for are was were its his her you your our they their this that these those with from then there here some have has had does did not yes let oh just also very too can will would could into out off over than what when where who how why all any each one two him them she').split(' '));
-const cand = new Map(), sel = new Set();
+const cand = new Map(), sel = new Set(), extra = new Map();
 
 function addC(w, m, hl, pre) {
   const k = norm(w);
@@ -814,7 +840,7 @@ function renderPick() {
   const a = [...cand.values()].sort((x, y) => y.hl - x.hl);
   $('pick').classList.toggle('hidden', !a.length);
   $('chips').innerHTML = a.map(x =>
-    '<button class="chip' + (sel.has(x.k) ? ' on' : x.hl ? ' hl' : '') + '" data-k="' + esc(x.k) + '">' + esc(x.w) + '</button>').join('');
+    '<button class="chip' + (sel.has(x.k) ? ' on' : x.hl ? ' hl' : '') + '" data-k="' + esc(x.k) + '">' + esc(x.w) + (x.m ? ' · ' + esc(x.m) : '') + '</button>').join('');
   $('pickN').textContent = sel.size;
 }
 $('chips').onclick = e => {
@@ -905,8 +931,7 @@ async function toCanvas(f) {
   URL.revokeObjectURL(u);
   return c;
 }
-$('img').onchange = async e => {
-  const fs = [...e.target.files];
+async function ocrRun(fs) {
   if (!fs.length) return;
   let w;
   $('ocrSt').textContent = '인식 도구를 불러오는 중… (처음 한 번만 내려받아요)';
@@ -952,10 +977,190 @@ $('img').onchange = async e => {
   }
 };
 
+/* ───────── AI 설정 · 사진 분석 (Gemini / Anthropic) ───────── */
+const AI_STORE = 'wordBuddy:ai';
+const AI_DEF = { provider: 'gemini', models: { gemini: 'gemini-3.8-flash', anthropic: 'claude-sonnet-5-5' } };
+let AI = (() => {
+  try {
+    const o = JSON.parse(localStorage.getItem(AI_STORE) || '{}');
+    return {
+      provider: o.provider === 'anthropic' ? 'anthropic' : 'gemini',
+      models: Object.assign({}, AI_DEF.models, o.models || {})
+    };
+  } catch (e) { return { provider: 'gemini', models: Object.assign({}, AI_DEF.models) }; }
+})();
+const aiSaveState = () => { try { localStorage.setItem(AI_STORE, JSON.stringify(AI)); } catch (e) {} };
+const aiKeyName = p => 'wordBuddy:key:' + p;
+function aiGetKey(p) { try { return localStorage.getItem(aiKeyName(p || AI.provider)) || ''; } catch (e) { return ''; } }
+const aiModel = () => AI.models[AI.provider] || AI_DEF.models[AI.provider];
+function aiProviderLabel() { return AI.provider === 'gemini' ? 'Google Gemini' : 'Anthropic'; }
+function renderAI() {
+  const k = aiGetKey();
+  $('aiProv').value = AI.provider;
+  $('aiKey').placeholder = AI.provider === 'gemini' ? 'AIza…' : 'sk-ant-…';
+  $('aiModel').value = aiModel();
+  $('aiStatus').textContent = k
+    ? '✅ ' + aiProviderLabel() + ' 키 저장됨 (끝 4자리 ' + k.slice(-4) + ') · 사진 분석이 AI로 동작해요'
+    : aiProviderLabel() + ' 키가 아직 없어요. 저장하면 사진 분석이 AI로 바뀝니다.';
+}
+$('aiProv').onchange = e => {
+  AI.provider = e.target.value === 'anthropic' ? 'anthropic' : 'gemini';
+  aiSaveState(); $('aiModels').innerHTML = ''; renderAI();
+};
+$('aiSave').onclick = () => {
+  const v = $('aiKey').value.trim();
+  if (v) {
+    if (v.length < 20) return toast('키가 너무 짧아요. 다시 확인해 주세요.');
+    try { localStorage.setItem(aiKeyName(AI.provider), v); } catch (e) { return toast('키를 저장할 수 없어요.'); }
+    $('aiKey').value = '';
+  }
+  const m = $('aiModel').value.trim();
+  if (m) AI.models[AI.provider] = m;
+  aiSaveState(); renderAI(); toast(aiProviderLabel() + ' 설정을 저장했어요');
+};
+$('aiDel').onclick = () => {
+  try { localStorage.removeItem(aiKeyName(AI.provider)); } catch (e) {}
+  renderAI(); toast('키를 삭제했어요');
+};
+$('aiCheck').onclick = async () => {
+  const k = aiGetKey();
+  if (!k) return toast('먼저 API 키를 저장해 주세요.');
+  $('aiStatus').textContent = aiProviderLabel() + ' 모델 목록을 확인하는 중…';
+  try {
+    let ids = [];
+    if (AI.provider === 'gemini') {
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100', { headers: { 'x-goog-api-key': k } });
+      if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+      const j = await r.json();
+      ids = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace('models/', ''));
+    } else {
+      const r = await fetch('https://api.anthropic.com/v1/models?limit=30', {
+        headers: { 'x-api-key': k, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }
+      });
+      if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+      const j = await r.json();
+      ids = (j.data || []).map(x => x.id);
+    }
+    $('aiStatus').textContent = ids.length ? '✅ 사용 가능한 모델 ' + ids.length + '개 · 눌러서 선택하세요' : '모델 목록이 비어 있어요.';
+    $('aiModels').innerHTML = ids.map(id => '<button class="chip" data-model="' + esc(id) + '" style="min-height:40px;font-size:12px">' + esc(id) + '</button>').join('');
+  } catch (e) {
+    $('aiStatus').textContent = '❌ 확인 실패 (' + (e.status ? 'HTTP ' + e.status : e.message) + ') · 키와 인터넷 연결을 확인해주세요.';
+  }
+};
+$('aiModels').onclick = e => {
+  const b = e.target.closest('[data-model]'); if (!b) return;
+  AI.models[AI.provider] = b.dataset.model;
+  $('aiModel').value = b.dataset.model; aiSaveState(); renderAI();
+  toast('모델을 바꿨어요: ' + b.dataset.model);
+};
+
+function aiFriendly(err) {
+  if (err.status === 401 || err.status === 403) return 'API 키가 올바르지 않거나 권한이 없어요. AI 설정에서 확인해 주세요.';
+  if (err.status === 404) return '모델 이름을 찾을 수 없어요. AI 설정 → 연결 확인에서 골라주세요.';
+  if (err.status === 429) return '요청이 너무 많아요. 잠시 뒤 다시 시도해 주세요.';
+  if (err.status >= 500) return 'AI 서버가 잠시 바빠요.';
+  return err.message || '알 수 없는 오류';
+}
+async function aiJpeg(file) {
+  const u = URL.createObjectURL(file), im = new Image();
+  await new Promise((ok, no) => { im.onload = ok; im.onerror = no; im.src = u; });
+  const sc = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight));
+  const c = document.createElement('canvas');
+  c.width = Math.round(im.naturalWidth * sc); c.height = Math.round(im.naturalHeight * sc);
+  c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+  URL.revokeObjectURL(u);
+  return c.toDataURL('image/jpeg', 0.85).split(',')[1];
+}
+function aiPrompt() {
+  return 'You are reading a photo of an English vocabulary worksheet for a Korean elementary student.\n' +
+    'The page is ONE of two formats:\n' +
+    '(A) a reading passage where target words are marked with a yellow highlighter, often repeated in a "Key Words" section;\n' +
+    '(B) a numbered "Words to Know" list where each entry has a part of speech and an English definition.\n' +
+    'Reply with ONLY valid JSON, no markdown fences, no commentary:\n' +
+    '{"words":[{"w":"wonderful","pos":"adjective","d":"If something is wonderful, it is very good.","ipa":"/\u02c8w\u028cn.d\u025d.f\u0259l/","ko":"\ud6cc\ub96d\ud55c"}]}\n' +
+    'Rules:\n' +
+    '- Format A: include every highlighted word in order of first appearance, then Key Words entries not already included. Skip words that appear only in ordinary sentences, titles, instructions or questions.\n' +
+    '- Format B: include every numbered entry, in order. Copy the English definition exactly as printed, without the "Definition:" label. Keep the part of speech.\n' +
+    '- Never skip a word, even an easy one. No duplicates (ignore case). Keep the original spelling. Up to 60 words.\n' +
+    '- d: the definition printed on the page (format B), or one short learner-friendly English definition you write (format A).\n' +
+    '- pos: noun / verb / adjective / adverb when the page shows it.\n' +
+    '- ko: short Korean meaning, 8 words or fewer.\n' +
+    '- ipa: IPA in slashes.\n' +
+    '- JSON only.';
+}
+async function aiCall(b64, prompt) {
+  const key = aiGetKey(), model = aiModel();
+  if (!key) throw new Error('AI 키가 없어요.');
+  if (AI.provider === 'gemini') {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + key, 'x-goog-api-key': key },
+      body: JSON.stringify({
+        model, temperature: 0.2, max_tokens: 2000,
+        messages: [{ role: 'user', content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } }
+        ] }]
+      })
+    });
+    if (!r.ok) { const e = new Error((await r.text()).slice(0, 200)); e.status = r.status; throw e; }
+    const j = await r.json();
+    return (((j.choices || [])[0] || {}).message || {}).content || '';
+  }
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({
+      model, max_tokens: 2000,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+        { type: 'text', text: prompt }
+      ] }]
+    })
+  });
+  if (!r.ok) { const e = new Error((await r.text()).slice(0, 200)); e.status = r.status; throw e; }
+  const j = await r.json();
+  return (j.content || []).filter(x => x.type === 'text').map(x => x.text).join('');
+}
+async function aiRun(fs) {
+  let total = 0, n = 0;
+  for (const f of fs) {
+    n++;
+    $('ocrSt').textContent = '🤖 ' + n + ' / ' + fs.length + ' 분석 중… (' + f.name + ')';
+    try {
+      const b64 = await aiJpeg(f);
+      const txt = await aiCall(b64, aiPrompt());
+      const raw = txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1);
+      const j = JSON.parse(raw);
+      const ws = (j.words || []).filter(x => x && x.w).map(x => ({
+        w: String(x.w).trim(), m: String(x.ko || '').trim(), ipa: String(x.ipa || '').trim(),
+        d: String(x.d || '').trim(), pos: String(x.pos || '').trim()
+      })).filter(x => /^[A-Za-z][A-Za-z' \-]*$/.test(x.w)).slice(0, 60);
+      ws.forEach(x => { addC(x.w, x.m, false, true); const c = cand.get(norm(x.w));
+        if (c) { c.d = x.d || ''; c.pos = x.pos || ''; if (x.ipa) c.ipa = x.ipa; }
+        extra.set(norm(x.w), { d: x.d || '', pos: x.pos || '', ipa: x.ipa || '' }); });
+      total += ws.length;
+      renderPick();
+      $('ocrSt').textContent = '✅ ' + n + ' / ' + fs.length + ' 완료 · 단어 ' + total + '개';
+    } catch (err) {
+      $('ocrSt').textContent = '❌ ' + f.name + ' · ' + aiFriendly(err);
+      if (err.status === 401 || err.status === 403 || err.status === 404) break;
+    }
+  }
+  if (total) $('ocrSt').textContent += ' · 필요한 단어를 고른 뒤 "선택한 N개 추가"를 누르세요.';
+}
+$('img').onchange = e => {
+  const fs = [...e.target.files];
+  e.target.value = '';
+  if (!fs.length) return;
+  if (aiGetKey()) aiRun(fs); else ocrRun(fs);
+};
+
 /* ───────── 세트 저장 · 목록 ───────── */
 $('saveSet').onclick = () => {
   const seen = new Set();
-  const words = parse($('txt').value).filter(x => !seen.has(norm(x.w)) && seen.add(norm(x.w)));
+  const words = parse($('txt').value).filter(x => !seen.has(norm(x.w)) && seen.add(norm(x.w)))
+    .map(x => { const e = extra.get(norm(x.w)) || {}; return { w: x.w, m: x.m, d: e.d || '', pos: e.pos || '', ipa: e.ipa || '' }; });
   if (!words.length) return toast('단어를 찾지 못했어요. "apple 사과"처럼 한 줄에 하나씩 적어주세요.');
   const d = new Date(), id = 's' + Date.now();
   S.sets.push({ id, date: md(d), title: $('ttl').value.trim() || md(d) + ' 단어 프린트', words });
@@ -1059,8 +1264,10 @@ showName();
 renderScope();
 renderSets();
 $('wrongN').textContent = wrongList().length;
+renderAI();
 tab('read');
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
