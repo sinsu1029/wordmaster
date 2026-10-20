@@ -2,295 +2,1065 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
 <title>단어 마스터</title>
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <style>
-  .t.on{background:#fff;color:#047857;box-shadow:0 1px 2px #0002}
-  .hl{background:#fef3c7!important;border-color:#fbbf24!important}
-  .hidem .mean:not(.show){filter:blur(6px);cursor:pointer}
+  /* ── 기본 ───────────────────────────────────────────── */
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:#f2f9f5;color:#1e293b;min-height:100vh;padding-bottom:100px;
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic","Segoe UI",Roboto,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased;
+  }
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{border:0;background:none}
+  .hidden{display:none!important}
+  .wrap{max-width:760px;margin:0 auto;padding:16px 16px 8px}
+
+  /* ── 헤더 ───────────────────────────────────────────── */
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .app-title{margin:0;font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.3}
+  .sub{margin:4px 0 0;font-size:12.5px;color:#64748b}
+
+  /* ── 버튼 ───────────────────────────────────────────── */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    min-height:54px;padding:0 18px;border-radius:16px;background:#e9eef3;color:#0f172a;
+    font-weight:700;font-size:16px;cursor:pointer;touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;transition:transform .08s ease,filter .15s ease;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn.primary{background:#059669;color:#fff;box-shadow:0 2px 0 #047857}
+  .btn.primary:active{box-shadow:none;transform:translateY(1px) scale(.99)}
+  .btn.soft{background:#d1fae5;color:#047857}
+  .btn.ghost{background:#e9eef3;color:#334155}
+  .btn.danger{background:#ffe4e6;color:#be123c}
+  .btn.block{display:flex;width:100%}
+  .btn.sm{min-height:48px;font-size:14.5px;padding:0 14px;border-radius:14px}
+  .btn.tiny{min-height:44px;font-size:13.5px;padding:0 12px;border-radius:13px}
+  .btn.round{width:58px;height:58px;min-height:58px;padding:0;border-radius:50%;font-size:23px;flex:none}
+  .btn:focus-visible,.tab:focus-visible,.qo:focus-visible,.chip:focus-visible{outline:3px solid #34d399;outline-offset:2px}
+
+  /* ── 탭 ─────────────────────────────────────────────── */
+  .tabs{display:flex;gap:4px;background:#e3ece7;padding:5px;border-radius:18px;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{
+    flex:1 1 0;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    min-height:50px;padding:0 14px;border-radius:14px;background:transparent;color:#475569;
+    font-weight:700;font-size:15px;white-space:nowrap;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;transition:background .15s,color .15s;
+  }
+  .tab.on{background:#fff;color:#047857;box-shadow:0 1px 3px rgba(15,23,42,.12)}
+  .badge{
+    display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;
+    padding:0 6px;border-radius:999px;background:#f43f5e;color:#fff;font-size:12px;font-weight:800;
+  }
+
+  /* ── 범위 선택 ──────────────────────────────────────── */
+  .scope{
+    display:block;width:100%;height:54px;margin:10px 0 14px;padding:0 14px;
+    border:1px solid #cbd5e1;border-radius:16px;background:#fff;font-size:15px;font-weight:600;
+    appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 16px center;
+  }
+
+  /* ── 카드 · 레이아웃 ────────────────────────────────── */
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:16px;margin-bottom:12px}
+  .card:last-child{margin-bottom:0}
+  .h2{margin:0;font-size:19px;font-weight:800}
+  .h3{margin:0 0 8px;font-size:15.5px;font-weight:800}
+  .hint{margin:6px 0 0;font-size:12.8px;color:#64748b;line-height:1.6}
+  .hint b{color:#475569}
+  .stack{display:flex;flex-direction:column;gap:10px}
+  .stack.sm{gap:8px}
+  .row{display:flex;align-items:center;gap:10px}
+  .row.between{justify-content:space-between}
+  .row.end{justify-content:flex-end}
+  .row.wrap{flex-wrap:wrap}
+  .grow{flex:1;min-width:0}
+  .empty{padding:44px 12px;text-align:center;color:#94a3b8;font-size:15px;font-weight:600;line-height:1.7}
+
+  /* ── 입력 ───────────────────────────────────────────── */
+  input:not([type=checkbox]):not([type=file]),textarea{
+    width:100%;border:1px solid #cbd5e1;border-radius:16px;background:#fff;
+    padding:14px 16px;font-size:16px;outline:none;transition:border-color .15s,box-shadow .15s;
+  }
+  input:not([type=checkbox]):not([type=file]):focus,textarea:focus{
+    border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.15)
+  }
+  textarea{resize:none;line-height:1.75;min-height:160px}
+  .file{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;padding:14px;border:2px dashed #a7c7b8;border-radius:16px;background:#f8fdfa;font-size:15px;font-weight:700;color:#047857;cursor:pointer;text-align:center}
+  .file:active{background:#ecfdf5}
+
+  /* ── 읽기 ───────────────────────────────────────────── */
+  .rw{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:14px 16px;
+    transition:background .2s,border-color .2s;
+  }
+  .rw.hl{background:#fef9c3;border-color:#fbbf24}
+  .w{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.25;word-break:break-word}
+  .mean{font-size:16px;color:#475569;margin-top:2px;transition:filter .15s}
+  .hidem .mean:not(.show){filter:blur(7px);cursor:pointer}
+
+  /* ── 진행 표시 ──────────────────────────────────────── */
+  .step{font-size:12.5px;font-weight:800;color:#94a3b8;letter-spacing:.03em;margin-bottom:6px}
+  .bar{height:8px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin-bottom:16px}
+  .bar>i{display:block;height:100%;width:0;background:#059669;border-radius:999px;transition:width .3s ease}
+
+  /* ── 스펠링 ─────────────────────────────────────────── */
+  .prompt{font-size:34px;font-weight:800;letter-spacing:.12em;line-height:1.35;text-align:center;word-break:break-word}
+  .prompt .blank{color:#94a3b8}
+  .spell-in{height:72px;font-size:30px;font-weight:700;text-align:center;letter-spacing:.06em}
+  .fb{min-height:36px;margin-top:12px;text-align:center;font-size:15px;line-height:1.6}
+  .fb.ok{color:#059669;font-weight:800}
+  .fb.bad{color:#e11d48;font-weight:700}
+  .fb .big{font-size:22px;color:#0f172a}
+
+  /* ── 퀴즈 ───────────────────────────────────────────── */
+  .qo{
+    display:flex;align-items:center;width:100%;min-height:62px;padding:12px 16px;
+    border:2px solid #e2e8f0;border-radius:16px;background:#fff;
+    font-size:17px;font-weight:600;text-align:left;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;transition:transform .08s,background .15s,border-color .15s;
+  }
+  .qo:active{transform:scale(.99)}
+  .qo.good{background:#d1fae5;border-color:#10b981}
+  .qo.bad{background:#ffe4e6;border-color:#f43f5e}
+
+  /* ── 오답 ───────────────────────────────────────────── */
+  .wrow{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:#fff;border:1px solid #fecdd3;border-radius:18px;padding:14px 16px;
+  }
+  .wrow .w{font-size:24px}
+  .meta{font-size:13px;color:#e11d48;margin-top:3px;font-weight:700}
+
+  /* ── 칩 ─────────────────────────────────────────────── */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;max-height:200px;overflow-y:auto;padding:4px 0}
+  .chip{
+    min-height:46px;padding:0 14px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;
+    font-size:14px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  }
+  .chip.hl{background:#fef9c3;border-color:#fbbf24}
+  .chip.on{background:#059669;border-color:#059669;color:#fff}
+
+  /* ── 스위치 ─────────────────────────────────────────── */
+  .switch{
+    display:inline-flex;align-items:center;gap:9px;min-height:54px;padding:0 15px;
+    border-radius:16px;background:#e9eef3;font-size:14.5px;font-weight:700;cursor:pointer;
+  }
+  .switch input{width:20px;height:20px;accent-color:#059669;margin:0}
+
+  /* ── 세트 목록 ──────────────────────────────────────── */
+  .setrow{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #e2e8f0;border-radius:16px;padding:12px 14px;font-size:14px}
+  .setrow .t{font-weight:700}
+  .setrow .n{color:#94a3b8;font-weight:600}
+
+  /* ── 모달 ───────────────────────────────────────────── */
+  .modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(15,23,42,.45)}
+  .sheet{width:100%;max-width:420px;background:#fff;border-radius:24px;padding:22px;box-shadow:0 20px 60px rgba(15,23,42,.3)}
+  .gate-q{font-size:32px;font-weight:800;text-align:center;margin:20px 0;letter-spacing:.04em}
+  .gate-in{height:66px;font-size:26px;font-weight:800;text-align:center}
+
+  /* ── 토스트 · 속도 버튼 ─────────────────────────────── */
+  .toast{
+    position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(10px);z-index:90;
+    max-width:88%;padding:13px 18px;border-radius:14px;background:#0f172a;color:#fff;
+    font-size:14.5px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+  }
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  .rate{
+    position:fixed;right:16px;bottom:18px;z-index:60;min-height:50px;padding:0 17px;
+    border-radius:999px;background:#047857;color:#fff;font-size:14px;font-weight:700;
+    box-shadow:0 6px 18px rgba(4,120,87,.35);cursor:pointer;-webkit-tap-highlight-color:transparent;
+  }
+
+  @media (max-width:400px){
+    .w{font-size:26px}
+    .prompt{font-size:29px}
+    .btn{padding:0 14px;font-size:15px}
+    .tab{padding:0 11px;font-size:14px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
 </style>
 </head>
-<body class="bg-emerald-50/40 text-slate-800 font-sans min-h-screen pb-20">
-<div class="max-w-3xl mx-auto px-4 py-5">
-  <header class="mb-4">
-    <h1 id="title" class="text-2xl font-bold cursor-pointer" title="눌러서 이름 바꾸기"></h1>
-    <p class="text-xs text-slate-500">주 2회 학원 프린트 → 읽기 · 스펠링 · 퀴즈 · 오답</p>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1 id="title" class="app-title">📝 단어 마스터</h1>
+      <p class="sub">학원 프린트 → 읽기 · 스펠링 · 퀴즈 · 오답</p>
+    </div>
+    <button id="parentBtn" class="btn tiny ghost" title="부모님 설정">⚙ 부모</button>
   </header>
 
-  <div class="flex flex-col sm:flex-row gap-2 mb-5">
-    <nav class="flex gap-1 bg-slate-200/70 p-1 rounded-xl text-sm font-medium overflow-x-auto flex-1">
-      <button data-t="import" class="t px-3.5 py-2 rounded-lg whitespace-nowrap cursor-pointer">📥 올리기</button>
-      <button data-t="read" class="t px-3.5 py-2 rounded-lg whitespace-nowrap cursor-pointer">🔊 읽기</button>
-      <button data-t="spell" class="t px-3.5 py-2 rounded-lg whitespace-nowrap cursor-pointer">✍️ 스펠링</button>
-      <button data-t="quiz" class="t px-3.5 py-2 rounded-lg whitespace-nowrap cursor-pointer">❓ 퀴즈</button>
-      <button data-t="wrong" class="t px-3.5 py-2 rounded-lg whitespace-nowrap cursor-pointer">🔁 오답 <span id="wrongN" class="bg-rose-500 text-white text-xs px-1.5 py-0.5 rounded-full">0</span></button>
+  <!-- ══ 학습 화면 ══ -->
+  <div id="studyWrap">
+    <nav class="tabs" role="tablist">
+      <button class="tab on" data-t="read" role="tab">🔊 읽기</button>
+      <button class="tab" data-t="spell" role="tab">✍️ 스펠링</button>
+      <button class="tab" data-t="quiz" role="tab">❓ 퀴즈</button>
+      <button class="tab" data-t="wrong" role="tab">🔁 오답 <span id="wrongN" class="badge">0</span></button>
     </nav>
-    <select id="scope" class="border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white"></select>
+    <select id="scope" class="scope" aria-label="학습 범위"></select>
+
+    <!-- 읽기 -->
+    <section id="p-read" class="pg">
+      <div class="row wrap" style="margin-bottom:14px">
+        <button id="readAll" class="btn primary">🔊 전체 듣기</button>
+        <label class="switch"><input type="checkbox" id="hideM"> 뜻 가리기</label>
+      </div>
+      <div id="readBox" class="stack"></div>
+    </section>
+
+    <!-- 스펠링 -->
+    <section id="p-spell" class="pg hidden">
+      <div class="row wrap" style="margin-bottom:14px">
+        <select id="spLv" class="scope" style="margin:0;flex:1;min-width:190px;width:auto" aria-label="스펠링 단계">
+          <option value="1">1단계 · 보고 쓰기</option>
+          <option value="2">2단계 · 빈칸 채우기</option>
+          <option value="3">3단계 · 듣고 쓰기</option>
+        </select>
+        <button id="spRe" class="btn ghost">🔀 새로 시작</button>
+      </div>
+      <div id="spBox" class="card"></div>
+    </section>
+
+    <!-- 퀴즈 -->
+    <section id="p-quiz" class="pg hidden">
+      <div class="row wrap" style="margin-bottom:14px">
+        <select id="qzDir" class="scope" style="margin:0;flex:1;min-width:190px;width:auto" aria-label="퀴즈 방식">
+          <option value="en2ko">영어 → 뜻 고르기</option>
+          <option value="ko2en">뜻 → 영어 고르기</option>
+          <option value="listen">듣고 뜻 고르기</option>
+        </select>
+        <button id="qzRe" class="btn ghost">🔀 새로 시작</button>
+      </div>
+      <div id="qzBox" class="card"></div>
+    </section>
+
+    <!-- 오답 -->
+    <section id="p-wrong" class="pg hidden">
+      <div class="row wrap" style="margin-bottom:12px">
+        <button id="wSp" class="btn primary">✍️ 오답 스펠링</button>
+        <button id="wQz" class="btn primary">❓ 오답 퀴즈</button>
+      </div>
+      <p class="hint" style="margin-bottom:12px">틀린 단어는 여기에 쌓여요. <b>연속 2번 맞히면 자동으로 졸업</b>합니다.</p>
+      <div id="wrongBox" class="stack"></div>
+    </section>
   </div>
 
-  <!-- 올리기 -->
-  <section id="p-import" class="pg hidden space-y-4">
-    <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
-      <h2 class="font-bold">1. 프린트 사진 올리기 <span class="text-xs font-normal text-slate-400">(여러 장 가능)</span></h2>
-      <input id="img" type="file" accept="image/*" multiple class="text-sm">
-      <p id="ocrSt" class="text-xs text-slate-500">형광펜 칠한 단어, 또는 "단어 (품사) + Definition:" 양식의 단어를 자동으로 찾아줘요.</p>
-      <div id="pick" class="hidden border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
-        <h2 class="font-bold text-sm">2. 단어 고르기 <span class="font-normal text-slate-500">(눌러서 선택 · 노란색은 형광펜 단어)</span></h2>
-        <div id="chips" class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto"></div>
-        <div class="flex flex-wrap gap-2 text-sm">
-          <button id="selHl" class="px-3 py-2 rounded-lg bg-yellow-100 cursor-pointer">🖍 형광펜만 선택</button>
-          <button id="selNone" class="px-3 py-2 rounded-lg bg-slate-200 cursor-pointer">모두 해제</button>
-          <button id="addSel" class="px-3 py-2 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer">➕ 선택한 <span id="pickN">0</span>개 추가</button>
+  <!-- ══ 부모 설정 ══ -->
+  <section id="p-parent" class="hidden">
+    <div class="row between" style="margin-bottom:14px">
+      <h2 class="h2">⚙ 부모 설정</h2>
+      <button id="parentBack" class="btn sm ghost">← 학습으로</button>
+    </div>
+
+    <div class="card">
+      <h3 class="h3">1. 사진으로 단어 찾기</h3>
+      <p class="hint">프린트 사진을 올리면 형광펜 단어나 <b>단어 (품사) + Definition:</b> 양식을 찾아요. 사진 인식은 <b>인터넷 연결이 필요</b>하고, 처음엔 1~2분 걸릴 수 있어요. 연결이 없으면 아래 3번에 직접 입력해 주세요.</p>
+      <label class="file" for="img" style="margin-top:10px">📷 사진 선택 (여러 장 가능)</label>
+      <input id="img" type="file" accept="image/*" multiple class="hidden">
+      <p id="ocrSt" class="hint"></p>
+      <div id="pick" class="hidden">
+        <div style="border-top:1px solid #e2e8f0;margin:14px 0 12px"></div>
+        <h3 class="h3">찾은 단어 고르기 <span style="font-weight:600;color:#64748b;font-size:13px">· 노란색 = 형광펜</span></h3>
+        <div id="chips" class="chips"></div>
+        <div class="row wrap" style="margin-top:10px">
+          <button id="selHl" class="btn sm ghost">🖍 형광펜만</button>
+          <button id="selNone" class="btn sm ghost">모두 해제</button>
+          <button id="addSel" class="btn sm primary">➕ 선택한 <span id="pickN">0</span>개 추가</button>
         </div>
       </div>
-      <h2 class="font-bold pt-2">3. 단어 확인·수정 <span id="cnt" class="text-sm font-normal text-emerald-600"></span></h2>
-      <textarea id="txt" rows="10" class="w-full border border-slate-300 rounded-xl p-3 text-sm font-mono" placeholder="한 줄에 한 단어씩 (직접 입력/붙여넣기도 가능)&#10;apple 사과&#10;beautiful 아름다운&#10;3. journey - 여행"></textarea>
-      <div class="flex gap-2">
-        <input id="ttl" class="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-sm" placeholder="세트 이름 (예: 10/19 단어 프린트)">
-        <button id="saveSet" class="px-4 py-2.5 rounded-xl font-bold cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white">세트 저장</button>
+    </div>
+
+    <div class="card">
+      <h3 class="h3">2. 저장된 세트</h3>
+      <div id="setList" class="stack sm"></div>
+    </div>
+
+    <div class="card">
+      <h3 class="h3">3. 직접 입력 · 저장</h3>
+      <p class="hint" style="margin-bottom:10px">한 줄에 한 단어씩. <b>apple 사과</b> / <b>3. journey - 여행</b> 둘 다 됩니다.</p>
+      <textarea id="txt" rows="8" placeholder="apple 사과&#10;beautiful 아름다운&#10;3. journey - 여행"></textarea>
+      <p id="cnt" class="hint"></p>
+      <input id="ttl" placeholder="세트 이름 (예: 10/19 단어 프린트)" style="margin-top:10px">
+      <button id="saveSet" class="btn primary block" style="margin-top:10px">세트 저장</button>
+    </div>
+
+    <div class="card">
+      <h3 class="h3">4. 데이터 백업</h3>
+      <p class="hint">학습 기록은 <b>이 브라우저에만</b> 저장됩니다. 브라우저 기록을 지우면 사라지니, 백업 파일을 만들어 두세요.<br>불러오기에서 <b>합치기</b>를 고르면 세트는 id 기준으로 합쳐지고 오답 횟수는 더해집니다.</p>
+      <div class="row wrap" style="margin-top:12px">
+        <button id="expBtn" class="btn soft" style="flex:1">⬇️ 내보내기</button>
+        <button id="impBtn" class="btn ghost" style="flex:1">⬆️ 불러오기</button>
+        <input id="impFile" type="file" accept=".json,application/json" class="hidden">
+      </div>
+      <p id="impSt" class="hint"></p>
+    </div>
+
+    <div class="card">
+      <h3 class="h3">5. 아이 이름</h3>
+      <div class="row">
+        <input id="nameIn" class="grow" placeholder="이름">
+        <button id="nameSave" class="btn soft">변경</button>
       </div>
     </div>
-    <div class="bg-white border border-slate-200 rounded-2xl p-4">
-      <h2 class="font-bold mb-2">📚 저장된 세트</h2>
-      <div id="setList" class="space-y-2"></div>
-    </div>
-  </section>
-
-  <!-- 읽기 -->
-  <section id="p-read" class="pg hidden">
-    <div class="flex flex-wrap gap-3 items-center mb-3">
-      <button id="readAll" class="px-4 py-2.5 rounded-xl font-bold cursor-pointer bg-emerald-600 text-white">🔊 전체 듣기</button>
-      <label class="text-sm flex items-center gap-1.5"><input type="checkbox" id="hideM"> 뜻 가리기 (눌러서 확인)</label>
-    </div>
-    <div id="readBox" class="space-y-2"></div>
-  </section>
-
-  <!-- 스펠링 -->
-  <section id="p-spell" class="pg hidden">
-    <div class="flex gap-2 mb-3 items-center">
-      <select id="spLv" class="border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white">
-        <option value="1">1단계 · 보고 쓰기</option>
-        <option value="2">2단계 · 빈칸 채우기</option>
-        <option value="3">3단계 · 듣고 쓰기</option>
-      </select>
-      <button id="spRe" class="px-3 py-2 rounded-xl text-sm cursor-pointer bg-slate-200">🔀 새로 시작</button>
-    </div>
-    <div id="spBox" class="bg-white border border-slate-200 rounded-2xl p-5"></div>
-  </section>
-
-  <!-- 퀴즈 -->
-  <section id="p-quiz" class="pg hidden">
-    <div class="flex gap-2 mb-3 items-center">
-      <select id="qzDir" class="border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white">
-        <option value="en2ko">영어 → 뜻 고르기</option>
-        <option value="ko2en">뜻 → 영어 고르기</option>
-        <option value="listen">듣고 뜻 고르기</option>
-      </select>
-      <button id="qzRe" class="px-3 py-2 rounded-xl text-sm cursor-pointer bg-slate-200">🔀 새로 시작</button>
-    </div>
-    <div id="qzBox" class="bg-white border border-slate-200 rounded-2xl p-5"></div>
-  </section>
-
-  <!-- 오답 -->
-  <section id="p-wrong" class="pg hidden">
-    <div class="flex flex-wrap gap-2 mb-3">
-      <button id="wSp" class="px-4 py-2.5 rounded-xl font-bold cursor-pointer bg-emerald-600 text-white">✍️ 오답 스펠링</button>
-      <button id="wQz" class="px-4 py-2.5 rounded-xl font-bold cursor-pointer bg-emerald-600 text-white">❓ 오답 퀴즈</button>
-    </div>
-    <p class="text-xs text-slate-500 mb-3">틀린 단어는 여기에 쌓이고, 이후 <b>연속 2번 맞히면 자동으로 졸업</b>해요.</p>
-    <div id="wrongBox" class="space-y-2"></div>
   </section>
 </div>
 
-<button id="rateBtn" class="fixed bottom-4 right-4 z-50 bg-emerald-600 text-white text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg cursor-pointer">🙂 보통 속도</button>
+<button id="rateBtn" class="rate">🙂 보통 속도</button>
 
+<!-- 부모 확인 -->
+<div id="gate" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+  <div class="sheet">
+    <h2 id="gateTitle" class="h2">부모님 확인</h2>
+    <p class="hint">아이가 실수로 설정을 바꾸지 않도록 한 번 확인해요.</p>
+    <p class="gate-q" id="gateQ">7 × 8 = ?</p>
+    <input id="gateIn" class="gate-in" type="text" inputmode="numeric" autocomplete="off" aria-label="정답">
+    <div class="row end" style="margin-top:14px">
+      <button id="gateCancel" class="btn ghost">취소</button>
+      <button id="gateOk" class="btn primary">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 불러오기 방식 -->
+<div id="impModal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="sheet">
+    <h2 class="h2">백업 불러오기</h2>
+    <p class="hint" id="impInfo"></p>
+    <div class="stack" style="margin-top:16px">
+      <button id="impMerge" class="btn primary block">합치기</button>
+      <button id="impReplace" class="btn danger block">덮어쓰기</button>
+      <button id="impCancel" class="btn ghost block">취소</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
-const $=id=>document.getElementById(id), KEY='wordBuddy:child2', B='px-4 py-2.5 rounded-xl font-bold cursor-pointer ';
-const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const shuf=a=>a.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
-const norm=s=>s.toLowerCase().replace(/\s+/g,' ').trim();
-const md=d=>(d.getMonth()+1)+'/'+d.getDate();
+/* ───────── 공통 ───────── */
+const $ = id => document.getElementById(id);
+const KEY = 'wordBuddy:child2';            /* 기존 학습 기록을 이어 쓰기 위한 키 (변경 금지) */
+const B = 'btn primary ';
 
-/* ---------- 저장 데이터 ---------- */
-let S={name:'둘째',sets:[],stats:{}};
-try{S=Object.assign(S,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-const allW=()=>{const m=new Map();S.sets.forEach(s=>s.words.forEach(x=>{const k=norm(x.w);if(!m.has(k)||(!m.get(k).m&&x.m))m.set(k,x)}));return m};
-const wrongList=()=>{const a=allW();return Object.keys(S.stats).filter(k=>S.stats[k].x>0&&S.stats[k].s<2&&a.has(k)).map(k=>a.get(k))};
-const pool=()=>{const v=$('scope').value;if(v==='all')return[...allW().values()];if(v==='wrong')return wrongList();const s=S.sets.find(s=>s.id===v);return s?s.words:[]};
-function mark(w,ok){const k=norm(w),z=S.stats[k]||(S.stats[k]={r:0,x:0,s:0});if(ok){z.r++;z.s++}else{z.x++;z.s=0}save();renderWrong()}
-const empty=()=>'<p class="text-center text-slate-400 py-10">'+($('scope').value==='wrong'?'오답이 없어요 👏':"단어가 없어요. '올리기'에서 프린트를 올려주세요.")+'</p>';
+const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuf = a => a.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+const norm = s => String(s).toLowerCase().replace(/\s+/g, ' ').trim();
+const md = d => (d.getMonth() + 1) + '/' + d.getDate();
 
-/* ---------- 음성 ---------- */
-let voice,tok=0,ri=1,reading=0;
-const RATES=[[.6,'🐢 느리게'],[.85,'🙂 보통'],[1,'🐇 빠르게']];
-const pv=()=>{const e=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));voice=e.find(v=>/en.US/i.test(v.lang)&&/Google|Samantha|Aaron|Natural|Enhanced/i.test(v.name))||e.find(v=>/en.US/i.test(v.lang))||e[0]};
-pv();speechSynthesis.onvoiceschanged=pv;
-function say(t,done){const u=new SpeechSynthesisUtterance(t);u.lang='en-US';if(voice)u.voice=voice;u.rate=RATES[ri][0];let d=0;u.onend=u.onerror=()=>{if(!d){d=1;done&&done()}};speechSynthesis.speak(u)}
-function endRead(){reading=0;$('readAll').textContent='🔊 전체 듣기';document.querySelectorAll('.hl').forEach(e=>e.classList.remove('hl'))}
-const spk=t=>{tok++;speechSynthesis.cancel();endRead();say(t)};
-const letters=w=>spk(w.replace(/[^A-Za-z ]/g,'').split('').join(', '));
-$('rateBtn').onclick=function(){ri=(ri+1)%3;this.textContent=RATES[ri][1]+' 속도';spk('Ready')};
+let toastT;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('on'), 2400);
+}
 
-/* ---------- 탭 ---------- */
-let cur='import';
-function tab(n){cur=n;tok++;speechSynthesis.cancel();endRead();
-  document.querySelectorAll('.pg').forEach(e=>e.classList.toggle('hidden',e.id!=='p-'+n));
-  document.querySelectorAll('.t').forEach(b=>b.classList.toggle('on',b.dataset.t===n));
-  if(n==='read')renderRead();if(n==='spell')spStart();if(n==='quiz')qzStart();if(n==='wrong')renderWrong();if(n==='import')renderSets()}
-document.querySelectorAll('.t').forEach(b=>b.onclick=()=>tab(b.dataset.t));
-$('scope').onchange=()=>tab(cur);
+/* 세트 이름에 이미 날짜가 있으면 두 번 쓰지 않기 */
+function setLabel(s) {
+  const t = String(s.title || '');
+  return esc(t.indexOf(s.date) === 0 ? t : s.date + ' · ' + t);
+}
 
-function renderScope(sel){const v=sel||$('scope').value;
-  const o=[...S.sets].reverse().map(s=>`<option value="${s.id}">${s.date} · ${esc(s.title)} (${s.words.length})</option>`);
-  o.push(`<option value="all">📚 전체 (${allW().size})</option>`,`<option value="wrong">🔁 오답만 (${wrongList().length})</option>`);
-  $('scope').innerHTML=o.join('');
-  $('scope').value=[...$('scope').options].some(x=>x.value===v)?v:(S.sets.length?S.sets[S.sets.length-1].id:'all')}
+/* ───────── 저장 데이터 ───────── */
+let S = { name: '둘째', sets: [], stats: {} };
+try {
+  const raw = JSON.parse(localStorage.getItem(KEY) || '{}');
+  if (raw && typeof raw === 'object') {
+    S = {
+      name: typeof raw.name === 'string' ? raw.name : '둘째',
+      sets: Array.isArray(raw.sets)
+        ? raw.sets.filter(s => s && Array.isArray(s.words) && s.words.every(w => w && typeof w.w === 'string'))
+        : [],
+      stats: (raw.stats && typeof raw.stats === 'object') ? raw.stats : {}
+    };
+  }
+} catch (e) {}
 
-/* ---------- 올리기 (OCR · 파싱 · 세트 저장) ---------- */
-function parse(t){return t.split('\n').map(l=>{l=l.trim().replace(/^\d+\s*[.)]\s*/,'');if(!l)return null;
-  const h=l.search(/[가-힣]/);let w,m='';
-  if(h>0){w=l.slice(0,h);m=l.slice(h)}else if(h<0){const k=l.search(/\t|\s[-:=|]\s|:\s|\s{2,}/);if(k<0)w=l;else{w=l.slice(0,k);m=l.slice(k).replace(/^\s*[-:=|]?\s*/,'')}}else return null;
-  w=w.replace(/[\s\-:=|,.]+$/,'').trim();return /^[A-Za-z][A-Za-z'’ \-]*$/.test(w)?{w,m:m.trim()}:null}).filter(Boolean)}
-const cnt=()=>{const n=parse($('txt').value).length;$('cnt').textContent=n?`· 단어 ${n}개 인식`:''};
-$('txt').oninput=cnt;
-/* 이미지 → 단어 후보 (형광펜 감지 · 양식 파싱) */
-const STOP=new Set('the and but for are was were its his her you your our they their this that these those with from then there here some have has had does did not yes let oh just also very too can will would could into out off over than what when where who how why all any each one two her him them she'.split(' '));
-const cand=new Map(),sel=new Set();
-function addC(w,m,hl,pre){const k=norm(w);if(!k)return;const o=cand.get(k)||{k,w,m:'',hl:false};if(m&&!o.m)o.m=m;if(hl)o.hl=true;cand.set(k,o);if(pre)sel.add(k)}
-function renderPick(){const a=[...cand.values()].sort((x,y)=>y.hl-x.hl);$('pick').classList.toggle('hidden',!a.length);
-  $('chips').innerHTML=a.map(x=>`<button data-k="${esc(x.k)}" class="chip px-3 py-1.5 rounded-full border text-sm cursor-pointer ${sel.has(x.k)?'bg-emerald-600 text-white border-emerald-600':x.hl?'bg-yellow-100 border-yellow-400':'bg-white border-slate-300'}">${esc(x.w)}</button>`).join('');
-  $('pickN').textContent=sel.size}
-$('chips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.k;sel.has(k)?sel.delete(k):sel.add(k);renderPick()};
-$('selHl').onclick=()=>{sel.clear();cand.forEach(x=>x.hl&&sel.add(x.k));renderPick()};
-$('selNone').onclick=()=>{sel.clear();renderPick()};
-$('addSel').onclick=()=>{const have=new Set(parse($('txt').value).map(x=>norm(x.w)));let n=0;const t=$('txt');
-  cand.forEach(x=>{if(sel.has(x.k)&&!have.has(x.k)){t.value+=(t.value&&!t.value.endsWith('\n')?'\n':'')+x.w+(x.m?'\t'+x.m:'')+'\n';n++}});
-  sel.clear();renderPick();cnt();$('ocrSt').textContent=n+'개를 아래 목록에 추가했어요. 뜻(한글)을 적거나 고친 뒤 "세트 저장"을 눌러주세요.'};
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); return true; }
+  catch (e) { toast('저장 공간이 부족해요. 백업 후 오래된 세트를 지워 주세요.'); return false; }
+}
 
-function wsParse(t){const L=t.split('\n').map(x=>x.trim()).filter(Boolean),o=[];
-  L.forEach((l,i)=>{const m=l.match(/^(?:\S{1,2}[.)]?\s+)?([A-Za-z][A-Za-z'-]+)\s*\(\s*(noun|verb|adj\w*|adv\w*|prep\w*|pron\w*|conj\w*)\s*\)/i);
-    if(m){const n=(L[i+1]||'').match(/^Defin\w*\s*[:;.]?\s*(.+)/i);o.push({w:m[1],m:n?n[1]:''})}});return o}
-function blobsFrom(d,W,H){const m=new Uint8Array(W*H),st=new Int32Array(W*H),out=[];
-  for(let i=0,p=0;i<d.length;i+=4,p++)m[p]=d[i]>225&&d[i+1]>200&&d[i+2]<150&&d[i]-d[i+2]>90?1:0;
-  for(let s=0;s<m.length;s++){if(m[s]!==1)continue;let sp=0,x0=W,y0=H,x1=0,y1=0,n=0;st[sp++]=s;m[s]=2;
-    while(sp){const p=st[--sp],x=p%W,y=(p-x)/W;n++;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
-      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;const q=ny*W+nx;if(m[q]===1){m[q]=2;st[sp++]=q}}}
-    const w=x1-x0+1,h=y1-y0+1;if(n>150&&w>=h*1.6&&h>=12&&h<=H*0.08&&n/(w*h)>0.35)out.push({x0,y0,x1,y1})}
-  return out}
-const blobs=c=>blobsFrom(c.getContext('2d').getImageData(0,0,c.width,c.height).data,c.width,c.height);
-function crop(c,b){const p=4,x=Math.max(0,b.x0-p),y=Math.max(0,b.y0-p),w=Math.min(c.width,b.x1+p)-x,h=Math.min(c.height,b.y1+p)-y,o=document.createElement('canvas');
-  o.width=w;o.height=h;o.getContext('2d').drawImage(c,x,y,w,h,0,0,w,h);return o}
-async function toCanvas(f){const u=URL.createObjectURL(f),im=new Image();await new Promise((ok,no)=>{im.onload=ok;im.onerror=no;im.src=u});
-  const s=Math.min(3,Math.max(1,2000/im.naturalWidth)),c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*s);c.height=Math.round(im.naturalHeight*s);
-  c.getContext('2d',{willReadFrequently:true}).drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);return c}
-$('img').onchange=async e=>{const fs=[...e.target.files];let w,n=0;
-  try{w=await Tesseract.createWorker('eng');
-    for(const f of fs){n++;$('ocrSt').textContent=`사진 ${n}/${fs.length} 분석 중… (처음엔 1~2분 걸릴 수 있어요)`;
-      const c=await toCanvas(f);await w.setParameters({tessedit_pageseg_mode:'3'});
-      const r=await w.recognize(c),ws=wsParse(r.data.text);
-      if(ws.length>=2){ws.forEach(x=>addC(x.w,x.m,false,true))}
-      else{
-        (r.data.words||[]).forEach(x=>{const t=x.text.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g,'');if(x.confidence>=60&&/^[A-Za-z][A-Za-z'-]{2,}$/.test(t)&&!STOP.has(t.toLowerCase()))addC(t,'',false,false)});
-        await w.setParameters({tessedit_pageseg_mode:'7'});
-        for(const b of blobs(c)){const t=(await w.recognize(crop(c,b))).data.text.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g,'');
-          if(/^[A-Za-z][A-Za-z' -]{1,24}$/.test(t))addC(t,'',true,true)}}
-      renderPick()}
-    $('ocrSt').textContent=cand.size?'단어를 찾았어요! 필요한 단어를 고른 뒤 "추가"를 눌러주세요.':'단어를 찾지 못했어요. 선명한 캡처로 다시 올리거나 직접 입력해주세요.'}
-  catch(err){$('ocrSt').textContent='글자 인식에 실패했어요. 직접 입력해주세요.'}
-  finally{try{w&&await w.terminate()}catch(x){}}};
-$('saveSet').onclick=()=>{const seen=new Set(),words=parse($('txt').value).filter(x=>!seen.has(norm(x.w))&&seen.add(norm(x.w)));
-  if(!words.length)return alert('단어를 찾지 못했어요.\n"apple 사과" 처럼 한 줄에 한 단어씩 적어주세요.');
-  const d=new Date(),id='s'+Date.now();
-  S.sets.push({id,date:md(d),title:$('ttl').value.trim()||md(d)+' 단어 프린트',words});save();
-  $('txt').value='';$('ttl').value='';$('img').value='';cnt();renderScope(id);tab('read')};
-function renderSets(){$('setList').innerHTML=S.sets.length?[...S.sets].reverse().map(s=>
-  `<div class="flex justify-between items-center border border-slate-200 rounded-xl p-2.5 text-sm"><span><b>${s.date}</b> ${esc(s.title)} <span class="text-slate-400">· ${s.words.length}개</span></span><button onclick="delSet('${s.id}')" class="text-rose-500 text-xs underline cursor-pointer">삭제</button></div>`).join('')
-  :'<p class="text-sm text-slate-400">아직 저장된 세트가 없어요.</p>'}
-function delSet(id){if(!confirm('이 세트를 삭제할까요?'))return;S.sets=S.sets.filter(s=>s.id!==id);save();renderScope();renderSets();renderWrong()}
+const allW = () => {
+  const m = new Map();
+  S.sets.forEach(s => s.words.forEach(x => {
+    const k = norm(x.w);
+    if (!m.has(k) || (!m.get(k).m && x.m)) m.set(k, x);
+  }));
+  return m;
+};
+const wrongList = () => {
+  const a = allW();
+  return Object.keys(S.stats)
+    .filter(k => S.stats[k] && S.stats[k].x > 0 && S.stats[k].s < 2 && a.has(k))
+    .map(k => a.get(k));
+};
+const pool = () => {
+  const v = $('scope').value;
+  if (v === 'all') return [...allW().values()];
+  if (v === 'wrong') return wrongList();
+  const s = S.sets.find(s => s.id === v);
+  return s ? s.words : [];
+};
+function mark(w, ok) {
+  const k = norm(w), z = S.stats[k] || (S.stats[k] = { r: 0, x: 0, s: 0 });
+  if (ok) { z.r++; z.s = Math.min(2, z.s + 1); } else { z.x++; z.s = 0; }
+  save();
+  refreshCounts();
+}
+function refreshCounts() {
+  $('wrongN').textContent = wrongList().length;
+  renderScope($('scope').value);
+}
+function empty() {
+  const v = $('scope').value;
+  const msg = v === 'wrong'
+    ? '오답이 없어요 👏'
+    : (S.sets.length
+        ? '이 범위에 단어가 없어요.'
+        : '아직 단어가 없어요.<br><span style="font-size:13px;font-weight:500">부모님이 <b>⚙ 부모</b>에서 단어를 넣어 주세요.</span>');
+  return '<div class="empty">' + msg + '</div>';
+}
 
-/* ---------- 읽기 ---------- */
-let curRead=[];
-function renderRead(){curRead=pool();$('readBox').innerHTML=curRead.length?curRead.map((x,i)=>
-  `<div class="rw flex items-center justify-between bg-white border border-slate-200 rounded-xl p-3" data-i="${i}"><div><div class="text-xl font-bold">${esc(x.w)}</div><div class="mean text-sm text-slate-600">${esc(x.m||'')}</div></div><div class="flex gap-1.5"><button data-a="w" class="w-10 h-10 bg-emerald-100 rounded-full cursor-pointer" title="발음">🔊</button><button data-a="l" class="w-10 h-10 bg-slate-100 rounded-full cursor-pointer" title="철자 읽기">🔤</button></div></div>`).join(''):empty()}
-$('readBox').onclick=e=>{const m=e.target.closest('.mean');if(m)return m.classList.toggle('show');
-  const b=e.target.closest('button');if(!b)return;const x=curRead[b.closest('.rw').dataset.i];b.dataset.a==='w'?spk(x.w):letters(x.w)};
-$('hideM').onchange=e=>$('readBox').classList.toggle('hidem',e.target.checked);
-$('readAll').onclick=()=>{if(reading){tok++;speechSynthesis.cancel();return endRead()}
-  const L=curRead,my=++tok;if(!L.length)return;reading=1;$('readAll').textContent='⏹️ 멈추기';let i=0;
-  const nx=()=>{if(my!==tok)return;document.querySelectorAll('.hl').forEach(e=>e.classList.remove('hl'));if(i>=L.length)return endRead();
-    const el=document.querySelector('.rw[data-i="'+i+'"]');if(el){el.classList.add('hl');el.scrollIntoView({block:'center',behavior:'smooth'})}
-    say(L[i++].w,()=>setTimeout(nx,900))};nx()};
+/* ───────── 음성 ───────── */
+let voice, tok = 0, ri = 1;
+const RATES = [[.6, '🐢 느리게'], [.85, '🙂 보통'], [1, '🐇 빠르게']];
+const pv = () => {
+  try {
+    const e = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+    voice = e.find(v => /en.US/i.test(v.lang) && /Google|Samantha|Aaron|Natural|Enhanced/i.test(v.name))
+         || e.find(v => /en.US/i.test(v.lang)) || e[0];
+  } catch (e) {}
+};
+pv();
+try { speechSynthesis.onvoiceschanged = pv; } catch (e) {}
 
-/* ---------- 스펠링 ---------- */
-let sp;
-function spStart(){const L=shuf(pool());if(!L.length){$('spBox').innerHTML=empty();return}sp={L,i:0,ok:0,ph:0,hint:0};spShow()}
-function spShow(){const w=sp.L[sp.i];
-  if(!w){$('spBox').innerHTML=`<div class="text-center py-6"><div class="text-5xl">🎉</div><p class="text-xl font-bold mt-2">${sp.ok} / ${sp.L.length} 정답!</p><button onclick="spStart()" class="${B}mt-4 bg-emerald-600 text-white">다시 하기</button></div>`;return}
-  sp.ph=0;sp.hint=0;const lv=$('spLv').value;
-  const mask=[...w.w].map((c,i)=>/[A-Za-z]/.test(c)&&i>0&&i%2?'＿':c).join('');
-  const show=lv==='1'?esc(w.w):lv==='2'?mask:'🔊';
-  $('spBox').innerHTML=`<div class="text-xs text-slate-400 mb-2">${sp.i+1} / ${sp.L.length}</div>
-  <div class="text-center space-y-1 py-2"><div class="text-3xl font-bold tracking-[.25em]">${show}</div><div class="text-slate-600">${esc(w.m||'')}</div></div>
-  <div class="flex justify-center gap-2 my-3"><button onclick="spk(sp.L[sp.i].w)" class="${B}bg-emerald-100">🔊 듣기</button><button onclick="letters(sp.L[sp.i].w)" class="${B}bg-slate-100">🔤 철자</button><button onclick="spHint()" class="${B}bg-amber-100">💡 힌트</button></div>
-  <input id="spIn" autocomplete="off" autocapitalize="none" spellcheck="false" class="w-full border-2 border-slate-300 rounded-xl p-3 text-xl text-center" placeholder="여기에 써보세요">
-  <div id="spFb" class="min-h-8 text-center mt-3"></div>
-  <div class="text-center"><button id="spBtn" onclick="spCheck()" class="${B}bg-emerald-600 text-white">확인</button></div>`;
-  $('spIn').onkeydown=e=>{if(e.key==='Enter')spCheck()};$('spIn').focus();if(lv==='3')spk(w.w)}
-const spFb=(h,c)=>{$('spFb').className='min-h-8 text-center mt-3 '+c;$('spFb').innerHTML=h};
-function spHint(){const w=sp.L[sp.i];sp.hint=Math.min(sp.hint+1,w.w.length);$('spIn').value=w.w.slice(0,sp.hint);$('spIn').focus()}
-function spCheck(){const w=sp.L[sp.i];if(sp.ph===1){sp.i++;return spShow()}
-  const raw=$('spIn').value.trim(),v=norm(raw);if(!v)return;
-  if(v===norm(w.w)){if(sp.ph===2){sp.i++;return spShow()}
-    mark(w.w,1);sp.ok++;sp.ph=1;spFb('⭕ 정답! 잘했어요','text-emerald-600 font-bold');$('spBtn').textContent='다음 ▶';return}
-  if(sp.ph===2)return spFb('❌ 정답을 보고 정확히 써보세요','text-rose-600');
-  mark(w.w,0);sp.ph=2;
-  const mine=[...raw].map((c,i)=>`<span class="${c.toLowerCase()===(w.w[i]||'').toLowerCase()?'':'text-rose-600 underline'}">${esc(c)}</span>`).join('');
-  spFb(`❌ 내 답: ${mine}<br>정답: <b class="text-xl">${esc(w.w)}</b><br><span class="text-xs text-slate-500">정답을 보고 한 번 따라 써보세요</span>`,'');
-  $('spIn').value='';$('spIn').placeholder='정답을 보고 따라 써요';$('spIn').focus()}
-$('spLv').onchange=spStart;$('spRe').onclick=spStart;
+function say(t, done, rate) {
+  if (!('speechSynthesis' in window)) { if (done) done(); return; }
+  const u = new SpeechSynthesisUtterance(t);
+  u.lang = 'en-US';
+  if (voice) u.voice = voice;
+  u.rate = rate || RATES[ri][0];
+  let d = 0;
+  u.onend = u.onerror = () => { if (!d) { d = 1; if (done) done(); } };
+  try { speechSynthesis.speak(u); } catch (e) { if (done) done(); }
+}
+function endRead() {
+  document.querySelectorAll('.rw.hl').forEach(e => e.classList.remove('hl'));
+  const rb = $('readAll');
+  if (rb) rb.textContent = '🔊 전체 듣기';
+}
+function stopSpeech() { tok++; try { speechSynthesis.cancel(); } catch (e) {} endRead(); }
+function spk(t) { tok++; try { speechSynthesis.cancel(); } catch (e) {} endRead(); say(t); }
+function spkLetters(w) {
+  tok++; try { speechSynthesis.cancel(); } catch (e) {} endRead();
+  const t = w.replace(/[^A-Za-z ]/g, '').split('').join(', ');
+  say(t, null, .7);
+}
+$('rateBtn').onclick = function () {
+  ri = (ri + 1) % 3;
+  this.textContent = RATES[ri][1] + ' 속도';
+  spk('Ready');
+};
+/* iOS 등에서 첫 터치에 음성 엔진을 깨워두기 */
+let unlocked = false;
+document.addEventListener('pointerdown', () => {
+  if (unlocked || !('speechSynthesis' in window)) return;
+  unlocked = true;
+  try {
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}, { once: true });
 
-/* ---------- 퀴즈 ---------- */
-let qz;
-function qzStart(){const a=[...allW().values()].filter(x=>x.m),L=shuf(pool().filter(x=>x.m)).slice(0,10);
-  if(!L.length){$('qzBox').innerHTML=pool().length?'<p class="text-center text-slate-400 py-10">뜻이 있는 단어가 필요해요.</p>':empty();return}
-  qz={L,i:0,ok:0,bad:[],a,o:[],done:0};qzShow()}
-function qzShow(){const w=qz.L[qz.i];if(!w)return qzEnd();const d=$('qzDir').value;
-  qz.o=shuf([w,...shuf(qz.a.filter(x=>norm(x.w)!==norm(w.w))).slice(0,3)]);qz.done=0;
-  const head=d==='ko2en'?`<div class="text-2xl font-bold">${esc(w.m)}</div>`
-    :d==='listen'?`<button onclick="spk(qz.L[qz.i].w)" class="text-5xl cursor-pointer">🔊</button><div class="text-sm text-slate-500">듣고 뜻을 골라요</div>`
-    :`<div class="text-3xl font-bold">${esc(w.w)} <button onclick="spk(qz.L[qz.i].w)" class="text-xl cursor-pointer">🔊</button></div>`;
-  $('qzBox').innerHTML=`<div class="text-xs text-slate-400 mb-2">${qz.i+1} / ${qz.L.length}</div><div class="text-center py-4 space-y-1">${head}</div>
-  <div class="grid gap-2">${qz.o.map((o,j)=>`<button onclick="qzPick(${j})" class="qo ${B}bg-white border-2 border-slate-200 text-left">${esc(d==='ko2en'?o.w:o.m)}</button>`).join('')}</div><div id="qzNx" class="mt-3 text-center"></div>`;
-  if(d==='listen')spk(w.w)}
-function qzPick(j){if(qz.done)return;qz.done=1;const w=qz.L[qz.i],ok=qz.o[j]===w;mark(w.w,ok);ok?qz.ok++:qz.bad.push(w);
-  document.querySelectorAll('.qo').forEach((b,k)=>{if(qz.o[k]===w){b.style.background='#d1fae5';b.style.borderColor='#10b981'}else if(k===j){b.style.background='#ffe4e6';b.style.borderColor='#f43f5e'}});
-  $('qzNx').innerHTML=`<button onclick="qz.i++;qzShow()" class="${B}bg-emerald-600 text-white">다음 ▶</button>`}
-function qzEnd(){$('qzBox').innerHTML=`<div class="text-center py-4"><div class="text-5xl">${qz.ok===qz.L.length?'🏆':'👍'}</div><p class="text-xl font-bold mt-2">${qz.ok} / ${qz.L.length} 정답!</p>
-  ${qz.bad.length?`<div class="text-sm text-left mt-4 space-y-1"><p class="font-bold text-rose-600">틀린 단어 (오답노트에 저장됐어요)</p>${qz.bad.map(x=>`<p>${esc(x.w)} — ${esc(x.m)}</p>`).join('')}</div>`:''}
-  <button onclick="qzStart()" class="${B}mt-4 bg-emerald-600 text-white">다시 하기</button></div>`}
-$('qzDir').onchange=qzStart;$('qzRe').onclick=qzStart;
+/* ───────── 탭 ───────── */
+let cur = 'read';
+function tab(n) {
+  cur = n;
+  stopSpeech();
+  document.querySelectorAll('.pg').forEach(e => e.classList.toggle('hidden', e.id !== 'p-' + n));
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === n));
+  if (n === 'read') renderRead();
+  if (n === 'spell') spStart();
+  if (n === 'quiz') qzStart();
+  if (n === 'wrong') renderWrong();
+}
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => tab(b.dataset.t));
+$('scope').onchange = () => tab(cur);
 
-/* ---------- 오답 ---------- */
-let wl=[];
-function renderWrong(){wl=wrongList();$('wrongN').textContent=wl.length;
-  const grad=Object.keys(S.stats).filter(k=>S.stats[k].x>0&&S.stats[k].s>=2).length;
-  $('wrongBox').innerHTML=(wl.length?[...wl].sort((a,b)=>S.stats[norm(b.w)].x-S.stats[norm(a.w)].x).map((x,i)=>{const z=S.stats[norm(x.w)];
-    return `<div class="flex items-center justify-between bg-white border border-rose-200 rounded-xl p-3"><div><div class="font-bold text-lg">${esc(x.w)}</div><div class="text-sm text-slate-600">${esc(x.m||'')}</div><div class="text-xs text-rose-600">❌ ${z.x}회 틀림 · 연속 정답 ${z.s}/2</div></div>
-    <div class="flex gap-1.5"><button onclick="spk(${JSON.stringify(x.w).replace(/"/g,'&quot;')})" class="w-10 h-10 bg-emerald-100 rounded-full cursor-pointer">🔊</button><button onclick="gradW(${JSON.stringify(norm(x.w)).replace(/"/g,'&quot;')})" class="px-3 h-10 bg-slate-100 rounded-full text-xs cursor-pointer">졸업</button></div></div>`}).join('')
-    :'<p class="text-center text-slate-400 py-8">오답이 없어요 👏</p>')+`<p class="text-xs text-slate-400 text-center pt-2">🎓 졸업한 단어 ${grad}개</p>`;
-  const v=$('scope').value;renderScope(v)}
-function gradW(k){if(S.stats[k]){S.stats[k].s=2;save();renderWrong()}}
-$('wSp').onclick=()=>{$('scope').value='wrong';tab('spell')};
-$('wQz').onclick=()=>{$('scope').value='wrong';tab('quiz')};
+function renderScope(sel) {
+  const keep = sel !== undefined ? sel : $('scope').value;
+  const o = [...S.sets].reverse().map(s =>
+    '<option value="' + s.id + '">' + setLabel(s) + ' (' + s.words.length + ')</option>');
+  o.push('<option value="all">📚 전체 (' + allW().size + ')</option>',
+         '<option value="wrong">🔁 오답만 (' + wrongList().length + ')</option>');
+  $('scope').innerHTML = o.join('');
+  const ok = [...$('scope').options].some(x => x.value === keep);
+  $('scope').value = ok ? keep : (S.sets.length ? S.sets[S.sets.length - 1].id : 'all');
+}
 
-/* ---------- 시작 ---------- */
-const showName=()=>{$('title').textContent='📝 '+S.name+'의 단어 마스터'};
-$('title').onclick=()=>{const n=prompt('아이 이름을 입력하세요',S.name);if(n&&n.trim()){S.name=n.trim();save();showName()}};
-showName();renderScope();renderSets();$('wrongN').textContent=wrongList().length;
-tab(S.sets.length?'read':'import');
+/* ───────── 읽기 ───────── */
+let curRead = [];
+function renderRead() {
+  curRead = pool();
+  $('readBox').innerHTML = curRead.length
+    ? curRead.map((x, i) =>
+      '<div class="rw" data-i="' + i + '"><div><div class="w">' + esc(x.w) + '</div>' +
+      '<div class="mean">' + esc(x.m || '') + '</div></div>' +
+      '<div class="row" style="gap:8px;flex:none">' +
+      '<button class="btn round soft" data-a="w" aria-label="발음 듣기">🔊</button>' +
+      '<button class="btn round ghost" data-a="l" aria-label="철자 하나씩 듣기">🔤</button>' +
+      '</div></div>').join('')
+    : empty();
+  $('readBox').classList.toggle('hidem', $('hideM').checked);
+}
+$('readBox').onclick = e => {
+  const m = e.target.closest('.mean');
+  if (m) return m.classList.toggle('show');
+  const b = e.target.closest('button[data-a]');
+  if (!b) return;
+  const x = curRead[+b.closest('.rw').dataset.i];
+  if (!x) return;
+  b.dataset.a === 'w' ? spk(x.w) : spkLetters(x.w);
+};
+$('hideM').onchange = e => $('readBox').classList.toggle('hidem', e.target.checked);
+$('readAll').onclick = () => {
+  if (document.querySelector('.rw.hl')) { stopSpeech(); return; }
+  const L = curRead, my = ++tok;
+  if (!L.length) return;
+  $('readAll').textContent = '⏹️ 멈추기';
+  let i = 0;
+  const nx = () => {
+    if (my !== tok) return;
+    document.querySelectorAll('.rw.hl').forEach(e => e.classList.remove('hl'));
+    if (i >= L.length) return endRead();
+    const el = document.querySelector('.rw[data-i="' + i + '"]');
+    if (el) { el.classList.add('hl'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    say(L[i++].w, () => setTimeout(nx, 900));
+  };
+  nx();
+};
+
+/* ───────── 스펠링 ───────── */
+let sp = null;
+function spStart() {
+  stopSpeech();
+  const L = shuf(pool());
+  if (!L.length) { $('spBox').innerHTML = empty(); return; }
+  sp = { L, i: 0, ok: 0, bad: 0, ph: 0, hint: 0 };
+  spShow();
+}
+function spShow() {
+  const w = sp.L[sp.i];
+  if (!there(w)) {
+    $('spBox').innerHTML =
+      '<div style="text-align:center;padding:18px 0"><div style="font-size:52px">🎉</div>' +
+      '<p style="font-size:20px;font-weight:800;margin:8px 0 2px">' + sp.ok + ' / ' + sp.L.length + ' 정답!</p>' +
+      '<p class="hint">틀린 단어는 오답 노트에 쌓였어요.</p>' +
+      '<button class="' + B + 'block" style="margin-top:18px" onclick="spStart()">다시 하기</button></div>';
+    return;
+  }
+  sp.ph = 0; sp.hint = 0;
+  const lv = $('spLv').value;
+  const pct = Math.round((sp.i + 1) / sp.L.length * 100);
+  let prompt;
+  if (lv === '1') prompt = esc(w.w);
+  else if (lv === '2') prompt = [...w.w].map((c, i) =>
+    (/[A-Za-z]/.test(c) && i > 0 && i % 2) ? '<span class="blank">＿</span>' : esc(c)).join('');
+  else prompt = '<span style="font-size:46px">🔊</span>';
+
+  $('spBox').innerHTML =
+    '<div class="step">' + (sp.i + 1) + ' / ' + sp.L.length + '</div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+    '<div class="prompt">' + prompt + '</div>' +
+    '<div style="text-align:center;color:#334155;font-size:17px;margin-top:8px;font-weight:600">' + esc(w.m || '') + '</div>' +
+    '<div class="row" style="justify-content:center;margin:18px 0 16px;gap:8px">' +
+    '<button class="btn sm soft" id="spSay">🔊 듣기</button>' +
+    '<button class="btn sm ghost" id="spAbc">🔤 철자</button>' +
+    '<button class="btn sm ghost" id="spHintBtn">💡 힌트</button>' +
+    '</div>' +
+    '<input id="spIn" class="spell-in" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="여기에 써보세요" aria-label="철자 입력">' +
+    '<div id="spFb" class="fb" aria-live="polite"></div>' +
+    '<button id="spBtn" class="' + B + 'block">확인</button>';
+
+  $('spSay').onclick = () => spk(sp.L[sp.i].w);
+  $('spAbc').onclick = () => spkLetters(sp.L[sp.i].w);
+  $('spHintBtn').onclick = spHint;
+  $('spBtn').onclick = spCheck;
+  const inp = $('spIn');
+  inp.onkeydown = e => { if (e.key === 'Enter') spCheck(); };
+  inp.focus();
+  if (lv === '3') spk(w.w);
+}
+function there(w) { return !!w; }   /* null/undefined 가드 */
+const spFb = (h, c) => { const f = $('spFb'); if (!f) return; f.className = 'fb ' + c; f.innerHTML = h; };
+function spHint() {
+  const w = sp.L[sp.i];
+  sp.hint = Math.min(sp.hint + 1, w.w.length);
+  $('spIn').value = w.w.slice(0, sp.hint);
+  $('spIn').focus();
+}
+function spCheck() {
+  const w = sp.L[sp.i];
+  if (!w) return;
+  if (sp.ph === 1) { sp.i++; return spShow(); }
+  const raw = $('spIn').value.trim(), v = norm(raw);
+  if (!v) return;
+  if (v === norm(w.w)) {
+    if (sp.ph === 2) { sp.i++; return spShow(); }
+    mark(w.w, 1); sp.ok++; sp.ph = 1;
+    spFb('⭕ 정답! 잘했어요', 'ok');
+    $('spBtn').textContent = '다음 ▶';
+    return;
+  }
+  if (sp.ph === 2) return spFb('❌ 정답을 보고 정확히 써보세요', 'bad');
+  mark(w.w, 0); sp.ph = 2; sp.bad++;
+  const mine = [...raw].map((c, i) =>
+    '<span style="' + (c.toLowerCase() === (w.w[i] || '').toLowerCase() ? '' : 'color:#e11d48;text-decoration:underline') + '">' + esc(c) + '</span>').join('');
+  spFb('❌ 내 답: ' + mine + '<br>정답: <b class="big">' + esc(w.w) + '</b>' +
+       '<br><span style="font-size:13px;color:#64748b">정답을 보고 한 번 따라 써보세요</span>', '');
+  $('spIn').value = '';
+  $('spIn').placeholder = '정답을 보고 따라 써요';
+  $('spIn').focus();
+}
+$('spLv').onchange = spStart;
+$('spRe').onclick = spStart;
+
+/* ───────── 퀴즈 ───────── */
+let qz = null;
+function qzStart() {
+  stopSpeech();
+  const all = [...allW().values()].filter(x => x.m);
+  const L = shuf(pool().filter(x => x.m)).slice(0, 10);
+  if (!L.length) {
+    $('qzBox').innerHTML = pool().length
+      ? '<div class="empty">뜻이 적힌 단어가 필요해요.<br><span style="font-size:13px;font-weight:500">부모님께 뜻을 채워 달라고 해요.</span></div>'
+      : empty();
+    return;
+  }
+  qz = { L, i: 0, ok: 0, bad: [], a: all, o: [], done: 0 };
+  qzShow();
+}
+function qzShow() {
+  const w = qz.L[qz.i];
+  if (!w) return qzEnd();
+  const d = $('qzDir').value;
+  qz.o = shuf([w, ...shuf(qz.a.filter(x => norm(x.w) !== norm(w.w))).slice(0, 3)]);
+  qz.done = 0;
+  const pct = Math.round((qz.i + 1) / qz.L.length * 100);
+  const head = d === 'ko2en'
+    ? '<div style="font-size:26px;font-weight:800">' + esc(w.m) + '</div>'
+    : d === 'listen'
+      ? '<button class="btn round primary" id="qzSay" style="font-size:26px">🔊</button><div class="hint" style="margin-top:8px">듣고 뜻을 골라요</div>'
+      : '<div style="font-size:32px;font-weight:800;letter-spacing:-.02em">' + esc(w.w) + '</div>';
+
+  $('qzBox').innerHTML =
+    '<div class="step">' + (qz.i + 1) + ' / ' + qz.L.length + '</div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+    '<div style="text-align:center;padding:6px 0 18px">' + head + '</div>' +
+    '<div class="stack" id="qzOpts">' +
+    qz.o.map((o, j) => '<button class="qo" data-j="' + j + '">' + esc(d === 'ko2en' ? o.w : o.m) + '</button>').join('') +
+    '</div><div id="qzNx" style="margin-top:14px"></div>';
+
+  $('qzOpts').querySelectorAll('.qo').forEach(b => b.onclick = () => qzPick(+b.dataset.j));
+  if (d === 'listen') { $('qzSay').onclick = () => spk(w.w); spk(w.w); }
+}
+function qzPick(j) {
+  if (qz.done) return;
+  qz.done = 1;
+  const w = qz.L[qz.i], ok = qz.o[j] === w;
+  mark(w.w, ok);
+  ok ? qz.ok++ : qz.bad.push(w);
+  $('qzOpts').querySelectorAll('.qo').forEach((b, k) => {
+    if (qz.o[k] === w) b.classList.add('good');
+    else if (k === j) b.classList.add('bad');
+  });
+  $('qzNx').innerHTML = '<button class="' + B + 'block" id="qzNext">다음 ▶</button>';
+  $('qzNext').onclick = () => { qz.i++; qzShow(); };
+}
+function qzEnd() {
+  $('qzBox').innerHTML =
+    '<div style="text-align:center;padding:10px 0"><div style="font-size:52px">' + (qz.ok === qz.L.length ? '🏆' : '👍') + '</div>' +
+    '<p style="font-size:20px;font-weight:800;margin:8px 0 2px">' + qz.ok + ' / ' + qz.L.length + ' 정답!</p>' +
+    (qz.bad.length
+      ? '<div style="text-align:left;margin-top:16px;background:#fff1f2;border-radius:16px;padding:14px"><p style="margin:0 0 6px;font-weight:800;color:#be123c;font-size:14px">틀린 단어 · 오답 노트에 저장했어요</p>' +
+        qz.bad.map(x => '<p style="margin:3px 0;font-size:15px"><b>' + esc(x.w) + '</b> — ' + esc(x.m) + '</p>').join('') + '</div>'
+      : '') +
+    '<button class="' + B + 'block" style="margin-top:18px" onclick="qzStart()">다시 하기</button></div>';
+}
+$('qzDir').onchange = qzStart;
+$('qzRe').onclick = qzStart;
+
+/* ───────── 오답 ───────── */
+let wl = [];
+function renderWrong() {
+  wl = wrongList();
+  $('wrongN').textContent = wl.length;
+  const grad = Object.keys(S.stats).filter(k => S.stats[k] && S.stats[k].x > 0 && S.stats[k].s >= 2).length;
+  const rows = wl.length
+    ? [...wl].sort((a, b) => S.stats[norm(b.w)].x - S.stats[norm(a.w)].x).map((x, i) => {
+        const z = S.stats[norm(x.w)];
+        return '<div class="wrow"><div><div class="w">' + esc(x.w) + '</div>' +
+          '<div class="mean">' + esc(x.m || '') + '</div>' +
+          '<div class="meta">❌ ' + z.x + '회 틀림 · 연속 정답 ' + z.s + '/2</div></div>' +
+          '<div class="row" style="gap:8px;flex:none">' +
+          '<button class="btn round soft" data-act="say" data-i="' + i + '" aria-label="발음">🔊</button>' +
+          '<button class="btn sm ghost" data-act="grad" data-i="' + i + '">졸업</button>' +
+          '</div></div>';
+      }).join('')
+    : '<div class="empty">오답이 없어요 👏</div>';
+  $('wrongBox').innerHTML = rows +
+    '<p class="hint" style="text-align:center;padding-top:4px">🎓 졸업한 단어 ' + grad + '개</p>';
+  if ($('scope').value === 'wrong') renderScope('wrong');
+}
+$('wrongBox').onclick = e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const x = wl[+b.dataset.i];
+  if (!x) return;
+  if (b.dataset.act === 'say') return spk(x.w);
+  const k = norm(x.w);
+  if (S.stats[k]) { S.stats[k].s = 2; save(); renderWrong(); refreshCounts(); toast('졸업! 오답 목록에서 빠졌어요'); }
+};
+$('wSp').onclick = () => { $('scope').value = 'wrong'; tab('spell'); };
+$('wQz').onclick = () => { $('scope').value = 'wrong'; tab('quiz'); };
+
+/* ───────── 부모 모드 ───────── */
+let gateAns = 0;
+function openGate() {
+  const a = 3 + Math.floor(Math.random() * 7), b = 3 + Math.floor(Math.random() * 7);
+  gateAns = a * b;
+  $('gateQ').textContent = a + ' × ' + b + ' = ?';
+  $('gateIn').value = '';
+  $('gate').classList.remove('hidden');
+  setTimeout(() => $('gateIn').focus(), 60);
+}
+function closeGate() { $('gate').classList.add('hidden'); }
+function openParent() {
+  stopSpeech();
+  $('studyWrap').classList.add('hidden');
+  $('p-parent').classList.remove('hidden');
+  $('rateBtn').classList.add('hidden');
+  $('parentBtn').classList.add('hidden');
+  $('nameIn').value = S.name;
+  renderSets();
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+function backToStudy() {
+  $('p-parent').classList.add('hidden');
+  $('studyWrap').classList.remove('hidden');
+  $('rateBtn').classList.remove('hidden');
+  $('parentBtn').classList.remove('hidden');
+  tab(cur);
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+$('parentBtn').onclick = openGate;
+$('gateCancel').onclick = closeGate;
+$('gateIn').onkeydown = e => { if (e.key === 'Enter') $('gateOk').click(); };
+$('gateOk').onclick = () => {
+  if (String(parseInt($('gateIn').value, 10)) === String(gateAns)) { closeGate(); openParent(); }
+  else { toast('정답이 아니에요. 다시 계산해 보세요.'); $('gateIn').value = ''; $('gateIn').focus(); }
+};
+$('gate').onclick = e => { if (e.target === $('gate')) closeGate(); };
+$('parentBack').onclick = backToStudy;
+
+/* ───────── 단어 파싱 ───────── */
+function parse(t) {
+  return t.split('\n').map(l => {
+    l = l.trim().replace(/^\d+\s*[.)]\s*/, '');
+    if (!l) return null;
+    const h = l.search(/[가-힣]/);
+    let w, m = '';
+    if (h > 0) { w = l.slice(0, h); m = l.slice(h); }
+    else if (h < 0) {
+      const k = l.search(/\t|\s[-:=|]\s|:\s|\s{2,}/);
+      if (k < 0) w = l; else { w = l.slice(0, k); m = l.slice(k).replace(/^\s*[-:=|]?\s*/, ''); }
+    } else return null;
+    w = w.replace(/[\s\-:=|,.]+$/, '').trim();
+    return /^[A-Za-z][A-Za-z'’ \-]*$/.test(w) ? { w, m: m.trim() } : null;
+  }).filter(Boolean);
+}
+$('txt').oninput = () => {
+  const n = parse($('txt').value).length;
+  $('cnt').textContent = n ? '단어 ' + n + '개 인식했어요.' : '';
+};
+
+/* ───────── OCR (인터넷 필요 · 지연 로드) ───────── */
+const STOP = new Set(('the and but for are was were its his her you your our they their this that these those with from then there here some have has had does did not yes let oh just also very too can will would could into out off over than what when where who how why all any each one two him them she').split(' '));
+const cand = new Map(), sel = new Set();
+
+function addC(w, m, hl, pre) {
+  const k = norm(w);
+  if (!k) return;
+  const o = cand.get(k) || { k, w, m: '', hl: false };
+  if (m && !o.m) o.m = m;
+  if (hl) o.hl = true;
+  cand.set(k, o);
+  if (pre) sel.add(k);
+}
+function renderPick() {
+  const a = [...cand.values()].sort((x, y) => y.hl - x.hl);
+  $('pick').classList.toggle('hidden', !a.length);
+  $('chips').innerHTML = a.map(x =>
+    '<button class="chip' + (sel.has(x.k) ? ' on' : x.hl ? ' hl' : '') + '" data-k="' + esc(x.k) + '">' + esc(x.w) + '</button>').join('');
+  $('pickN').textContent = sel.size;
+}
+$('chips').onclick = e => {
+  const b = e.target.closest('.chip');
+  if (!b) return;
+  const k = b.dataset.k;
+  sel.has(k) ? sel.delete(k) : sel.add(k);
+  renderPick();
+};
+$('selHl').onclick = () => { sel.clear(); cand.forEach(x => x.hl && sel.add(x.k)); renderPick(); };
+$('selNone').onclick = () => { sel.clear(); renderPick(); };
+$('addSel').onclick = () => {
+  const have = new Set(parse($('txt').value).map(x => norm(x.w)));
+  const t = $('txt');
+  let n = 0;
+  cand.forEach(x => {
+    if (sel.has(x.k) && !have.has(x.k)) {
+      t.value += (t.value && !t.value.endsWith('\n') ? '\n' : '') + x.w + (x.m ? '\t' + x.m : '') + '\n';
+      n++;
+    }
+  });
+  sel.clear(); renderPick(); $('txt').oninput();
+  $('ocrSt').textContent = n + '개를 아래 3번 목록에 넣었어요. 뜻(한글)을 채운 뒤 "세트 저장"을 눌러주세요.';
+};
+
+function loadTesseract() {
+  return new Promise((res, rej) => {
+    if (window.Tesseract) return res();
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    s.onload = res;
+    s.onerror = () => rej(new Error('offline'));
+    document.head.appendChild(s);
+  });
+}
+function wsParse(t) {
+  const L = t.split('\n').map(x => x.trim()).filter(Boolean), o = [];
+  L.forEach((l, i) => {
+    const m = l.match(/^(?:\S{1,2}[.)]?\s+)?([A-Za-z][A-Za-z'-]+)\s*\(\s*(noun|verb|adj\w*|adv\w*|prep\w*|pron\w*|conj\w*)\s*\)/i);
+    if (m) {
+      const n = (L[i + 1] || '').match(/^Defin\w*\s*[:;.]?\s*(.+)/i);
+      o.push({ w: m[1], m: n ? n[1] : '' });
+    }
+  });
+  return o;
+}
+function blobsFrom(d, W, H) {
+  const m = new Uint8Array(W * H), st = new Int32Array(W * H), out = [];
+  for (let i = 0, p = 0; i < d.length; i += 4, p++)
+    m[p] = (d[i] > 225 && d[i + 1] > 200 && d[i + 2] < 150 && d[i] - d[i + 2] > 90) ? 1 : 0;
+  for (let s = 0; s < m.length; s++) {
+    if (m[s] !== 1) continue;
+    let sp = 0, x0 = W, y0 = H, x1 = 0, y1 = 0, n = 0;
+    st[sp++] = s; m[s] = 2;
+    while (sp) {
+      const p = st[--sp], x = p % W, y = (p - x) / W;
+      n++;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const q = ny * W + nx;
+        if (m[q] === 1) { m[q] = 2; st[sp++] = q; }
+      }
+    }
+    const w = x1 - x0 + 1, h = y1 - y0 + 1;
+    if (n > 150 && w >= h * 1.6 && h >= 12 && h <= H * 0.08 && n / (w * h) > 0.35) out.push({ x0, y0, x1, y1 });
+  }
+  return out;
+}
+const blobs = c => blobsFrom(c.getContext('2d').getImageData(0, 0, c.width, c.height).data, c.width, c.height);
+function crop(c, b) {
+  const p = 4, x = Math.max(0, b.x0 - p), y = Math.max(0, b.y0 - p);
+  const w = Math.min(c.width, b.x1 + p) - x, h = Math.min(c.height, b.y1 + p) - y;
+  const o = document.createElement('canvas');
+  o.width = w; o.height = h;
+  o.getContext('2d').drawImage(c, x, y, w, h, 0, 0, w, h);
+  return o;
+}
+async function toCanvas(f) {
+  const u = URL.createObjectURL(f), im = new Image();
+  await new Promise((ok, no) => { im.onload = ok; im.onerror = no; im.src = u; });
+  const s = Math.min(3, Math.max(1, 2000 / im.naturalWidth));
+  const c = document.createElement('canvas');
+  c.width = Math.round(im.naturalWidth * s);
+  c.height = Math.round(im.naturalHeight * s);
+  c.getContext('2d', { willReadFrequently: true }).drawImage(im, 0, 0, c.width, c.height);
+  URL.revokeObjectURL(u);
+  return c;
+}
+$('img').onchange = async e => {
+  const fs = [...e.target.files];
+  if (!fs.length) return;
+  let w;
+  $('ocrSt').textContent = '인식 도구를 불러오는 중… (처음 한 번만 내려받아요)';
+  try {
+    await loadTesseract();
+  } catch (err) {
+    $('ocrSt').textContent = '인터넷에 연결되지 않아 사진 인식을 쓸 수 없어요. 연결 후 다시 시도하거나, 3번에 직접 입력해 주세요.';
+    $('img').value = '';
+    return;
+  }
+  let n = 0;
+  try {
+    w = await Tesseract.createWorker('eng');
+    for (const f of fs) {
+      n++;
+      $('ocrSt').textContent = '사진 ' + n + '/' + fs.length + ' 분석 중… (1~2분 걸릴 수 있어요)';
+      const c = await toCanvas(f);
+      await w.setParameters({ tessedit_pageseg_mode: '3' });
+      const r = await w.recognize(c), ws = wsParse(r.data.text);
+      if (ws.length >= 2) {
+        ws.forEach(x => addC(x.w, x.m, false, true));
+      } else {
+        (r.data.words || []).forEach(x => {
+          const t = x.text.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '');
+          if (x.confidence >= 60 && /^[A-Za-z][A-Za-z'-]{2,}$/.test(t) && !STOP.has(t.toLowerCase())) addC(t, '', false, false);
+        });
+        await w.setParameters({ tessedit_pageseg_mode: '7' });
+        for (const b of blobs(c)) {
+          const t = (await w.recognize(crop(c, b))).data.text.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '');
+          if (/^[A-Za-z][A-Za-z' -]{1,24}$/.test(t)) addC(t, '', true, true);
+        }
+      }
+      renderPick();
+    }
+    $('ocrSt').textContent = cand.size
+      ? '단어를 찾았어요. 필요한 단어를 고른 뒤 "추가"를 누르세요.'
+      : '단어를 찾지 못했어요. 선명한 사진으로 다시 시도하거나 3번에 직접 입력해 주세요.';
+  } catch (err) {
+    $('ocrSt').textContent = '글자 인식에 실패했어요. 3번에 직접 입력해 주세요.';
+  } finally {
+    try { if (w) await w.terminate(); } catch (x) {}
+    $('img').value = '';
+  }
+};
+
+/* ───────── 세트 저장 · 목록 ───────── */
+$('saveSet').onclick = () => {
+  const seen = new Set();
+  const words = parse($('txt').value).filter(x => !seen.has(norm(x.w)) && seen.add(norm(x.w)));
+  if (!words.length) return toast('단어를 찾지 못했어요. "apple 사과"처럼 한 줄에 하나씩 적어주세요.');
+  const d = new Date(), id = 's' + Date.now();
+  S.sets.push({ id, date: md(d), title: $('ttl').value.trim() || md(d) + ' 단어 프린트', words });
+  if (!save()) return;
+  $('txt').value = ''; $('ttl').value = ''; $('cnt').textContent = '';
+  cand.clear(); sel.clear(); renderPick();
+  renderSets(); renderScope(id); refreshCounts();
+  toast('세트 저장 완료 · ' + words.length + '개');
+};
+function renderSets() {
+  $('setList').innerHTML = S.sets.length
+    ? [...S.sets].reverse().map(s =>
+        '<div class="setrow"><span class="t">' + setLabel(s) +
+        ' <span class="n">· ' + s.words.length + '개</span></span>' +
+        '<button class="btn tiny danger" data-del="' + s.id + '">삭제</button></div>').join('')
+    : '<p class="hint">아직 저장된 세트가 없어요.</p>';
+}
+$('setList').onclick = e => {
+  const b = e.target.closest('[data-del]');
+  if (!b) return;
+  const id = b.dataset.del;
+  const s = S.sets.find(x => x.id === id);
+  if (!s) return;
+  if (!confirm('"' + s.title + '" 세트를 삭제할까요?\n단어 ' + s.words.length + '개가 사라집니다.')) return;
+  S.sets = S.sets.filter(x => x.id !== id);
+  save(); renderSets(); renderScope(); refreshCounts(); tab(cur);
+  toast('세트를 삭제했어요');
+};
+
+/* ───────── 백업 ───────── */
+$('expBtn').onclick = () => {
+  const d = new Date();
+  const name = 'wordmaster-' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '.json';
+  const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  $('impSt').textContent = '백업 파일을 내려받았어요. (세트 ' + S.sets.length + '개)';
+};
+let pending = null;
+$('impBtn').onclick = () => $('impFile').click();
+$('impFile').onchange = e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d || !Array.isArray(d.sets) || !d.sets.every(s => s && Array.isArray(s.words))) throw new Error('bad');
+      pending = d;
+      $('impInfo').textContent = '세트 ' + d.sets.length + '개 · 학습 기록 ' + Object.keys(d.stats || {}).length + '개를 찾았어요. 어떻게 넣을까요?';
+      $('impModal').classList.remove('hidden');
+    } catch (err) {
+      toast('백업 파일을 읽을 수 없어요.');
+    }
+    $('impFile').value = '';
+  };
+  r.onerror = () => toast('파일을 열 수 없어요.');
+  r.readAsText(f);
+};
+function closeImport() { $('impModal').classList.add('hidden'); pending = null; }
+$('impCancel').onclick = closeImport;
+$('impReplace').onclick = () => doImport('replace');
+$('impMerge').onclick = () => doImport('merge');
+function doImport(mode) {
+  const d = pending;
+  if (!d) return;
+  if (mode === 'replace') {
+    S = { name: d.name || S.name, sets: d.sets, stats: d.stats || {} };
+  } else {
+    const map = new Map(S.sets.map(s => [s.id, s]));
+    d.sets.forEach(s => { if (!map.has(s.id)) map.set(s.id, s); });
+    S.sets = [...map.values()];
+    Object.keys(d.stats || {}).forEach(k => {
+      const a = S.stats[k] || (S.stats[k] = { r: 0, x: 0, s: 0 }), b = d.stats[k];
+      a.r += b.r || 0; a.x += b.x || 0; a.s = Math.max(a.s || 0, b.s || 0);
+    });
+  }
+  save();
+  closeImport();
+  showName(); renderSets(); renderScope(); refreshCounts();
+  $('impSt').textContent = (mode === 'replace' ? '덮어썼어요' : '합쳤어요') + ' · 세트 ' + S.sets.length + '개';
+  toast(mode === 'replace' ? '백업으로 덮어썼어요' : '백업을 합쳤어요');
+}
+
+/* ───────── 이름 ───────── */
+function showName() { $('title').textContent = '📝 ' + S.name + '의 단어 마스터'; }
+$('nameSave').onclick = () => {
+  const n = $('nameIn').value.trim();
+  if (!n) return toast('이름을 입력해 주세요.');
+  S.name = n; save(); showName();
+  toast('"' + n + '"(으)로 바꿨어요');
+};
+
+/* ───────── 시작 ───────── */
+showName();
+renderScope();
+renderSets();
+$('wrongN').textContent = wrongList().length;
+tab('read');
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
